@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notifications - MedShare{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 40px auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h1 style="color: var(--dark); margin: 0;">
+            <i class="fas fa-bell"></i> Notifications
+        </h1>
+        {% if unread_count > 0 %}
+        <span class="badge badge-danger">{{ unread_count }} Unread</span>
+        {% endif %}
+    </div>
+
+    {% if notifications %}
+        <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+            {% for notif in notifications %}
+            <div class="card app-card app-notif {% if notif.is_read %}app-notif--read{% else %}app-notif--unread{% endif %}">
+                <div style="display: flex; justify-content: space-between; align-items: start; gap: 15px;">
+                    <div style="flex: 1;">
+                        <h3 style="color: var(--primary); margin: 0 0 8px 0;">{{ notif.title }}</h3>
+                        <p style="color: #666; margin: 0 0 10px 0;">{{ notif.message }}</p>
+                        <p style="color: #999; font-size: 12px; margin: 0;">
+                            <i class="fas fa-clock"></i> {{ notif.created_at|date:"M d, Y H:i" }}
+                        </p>
+                        
+                        {% if notif.donation_request %}
+                        <div style="margin-top: 12px;">
+                            <a href="{% url 'donation_request_detail' notif.donation_request.id %}" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">
+                                <i class="fas fa-eye"></i> View Request
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if not notif.is_read %}
+                    <form method="POST" style="margin: 0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="notif_id" value="{{ notif.id }}">
+                        <button type="submit" name="action" value="mark_read" class="btn-secondary" style="padding: 6px 12px; font-size: 12px;">
+                            <i class="fas fa-check"></i> Mark Read
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card app-card" style="text-align: center; padding: 60px;">
+            <i class="fas fa-bell-slash" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+            <h3 style="color: #999;">No notifications</h3>
+            <p style="color: #999;">You're all caught up!</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

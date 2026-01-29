@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Reports - MedShare{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 40px;">
+    <h1 style="color: var(--dark); margin-bottom: 30px;">
+        <i class="fas fa-chart-line"></i> Administration Reports & Analytics
+    </h1>
+
+    <!-- Main Statistics -->
+    <div class="dashboard">
+        <div class="stat-box">
+            <div class="stat-number">{{ total_medicines }}</div>
+            <div class="stat-label"><i class="fas fa-pills"></i> Total Medicines</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ available }}</div>
+            <div class="stat-label"><i class="fas fa-check-circle"></i> Available</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ donated }}</div>
+            <div class="stat-label"><i class="fas fa-hands-helping"></i> Donated</div>
+        </div>
+    </div>
+
+    <div class="dashboard" style="margin-top: 20px;">
+        <div class="stat-box">
+            <div class="stat-number">{{ expired }}</div>
+            <div class="stat-label"><i class="fas fa-exclamation-triangle"></i> Expired</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ total_requests }}</div>
+            <div class="stat-label"><i class="fas fa-list"></i> Total Requests</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ pending_requests }}</div>
+            <div class="stat-label"><i class="fas fa-hourglass-start"></i> Pending</div>
+        </div>
+    </div>
+
+    <div class="dashboard" style="margin-top: 20px;">
+        <div class="stat-box">
+            <div class="stat-number">{{ total_donors }}</div>
+            <div class="stat-label"><i class="fas fa-users"></i> Active Donors</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ total_ngos }}</div>
+            <div class="stat-label"><i class="fas fa-hospital"></i> Partner NGOs</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-number">{{ total_donors|add:total_ngos }}</div>
+            <div class="stat-label"><i class="fas fa-globe"></i> Total Users</div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Medicines -->
+{% if top_medicines %}
+<div class="card" style="margin-top: 40px;">
+    <div class="card-header">
+        <h2 class="card-title"><i class="fas fa-star"></i> Top Rated Medicines</h2>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th><i class="fas fa-pills"></i> Medicine Name</th>
+                <th><i class="fas fa-user"></i> Donor</th>
+                <th><i class="fas fa-star"></i> Rating</th>
+                <th><i class="fas fa-comments"></i> Reviews</th>
+                <th><i class="fas fa-calendar"></i> Expiry Date</th>
+                <th><i class="fas fa-cube"></i> Quantity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for medicine in top_medicines %}
+            <tr>
+                <td>
+                    <a href="{% url 'medicine_detail' medicine.id %}" style="color: var(--primary); text-decoration: none;">
+                        <strong>{{ medicine.name }}</strong>
+                    </a>
+                </td>
+                <td>{{ medicine.donor.get_full_name|default:medicine.donor.username }}</td>
+                <td>
+                    {% if medicine.avg_rating %}
+                        <span style="color: #ffc107;">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= medicine.avg_rating %}★{% else %}☆{% endif %}
+                            {% endfor %}
+                            {{ medicine.avg_rating|floatformat:1 }}
+                        </span>
+                    {% else %}
+                        <span style="color: #999;">—</span>
+                    {% endif %}
+                </td>
+                <td>{{ medicine.ratings_count|default:medicine.rating_count|default:0 }}</td>
+                <td>{{ medicine.expiry_date|date:"M d, Y" }}</td>
+                <td>{{ medicine.quantity }} {{ medicine.unit }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+<!-- Statistics Cards -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px; margin-top: 40px;">
+    <div class="card">
+        <h3 style="color: var(--primary); margin-bottom: 20px;">
+            <i class="fas fa-chart-pie"></i> Medicine Status Distribution
+        </h3>
+        <p style="color: #666; margin-bottom: 15px;">
+            <i class="fas fa-check-circle" style="color: #27ae60;"></i> 
+            Available: <strong>{{ available }}</strong>
+        </p>
+        <p style="color: #666; margin-bottom: 15px;">
+            <i class="fas fa-hands-helping" style="color: #f39c12;"></i> 
+            Donated: <strong>{{ donated }}</strong>
+        </p>
+        <p style="color: #666;">
+            <i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i> 
+            Expired: <strong>{{ expired }}</strong>
+        </p>
+    </div>
+
+    <div class="card">
+        <h3 style="color: var(--primary); margin-bottom: 20px;">
+            <i class="fas fa-users-cog"></i> User Statistics
+        </h3>
+        <p style="color: #666; margin-bottom: 15px;">
+            <i class="fas fa-heart" style="color: #e74c3c;"></i> 
+            Donors: <strong>{{ total_donors }}</strong>
+        </p>
+        <p style="color: #666; margin-bottom: 15px;">
+            <i class="fas fa-hospital" style="color: #3498db;"></i> 
+            NGOs: <strong>{{ total_ngos }}</strong>
+        </p>
+        <p style="color: #666;">
+            <i class="fas fa-globe" style="color: #2ecc71;"></i> 
+            Total: <strong>{{ total_donors|add:total_ngos }}</strong>
+        </p>
+    </div>
+
+    <div class="card">
+        <h3 style="color: var(--primary); margin-bottom: 20px;">
+            <i class="fas fa-exchange-alt"></i> Request Statistics
+        </h3>
+        <p style="color: #666; margin-bottom: 15px;">
+            <i class="fas fa-list" style="color: #95a5a6;"></i> 
+            Total Requests: <strong>{{ total_requests }}</strong>
+        </p>
+        <p style="color: #666; margin-bottom: 15px;">
+            <i class="fas fa-hourglass-start" style="color: #f39c12;"></i> 
+            Pending: <strong>{{ pending_requests }}</strong>
+        </p>
+        <p style="color: #666;">
+            <i class="fas fa-check-circle" style="color: #27ae60;"></i> 
+            Completion Rate: <strong>{{ total_requests|add:"-1"|add:pending_requests|add:"-0.000001" }}%</strong>
+        </p>
+    </div>
+</div>
+
+<!-- Additional Actions -->
+<div class="card" style="margin-top: 40px; background: linear-gradient(135deg, rgba(46,204,113,0.1) 0%, rgba(52,73,94,0.1) 100%);">
+    <div style="text-align: center; padding: 20px;">
+        <h3 style="color: var(--dark); margin-bottom: 15px;">
+            <i class="fas fa-tools"></i> Admin Tools
+        </h3>
+        <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+            <a href="{% url 'admin:core_medicine_changelist' %}" class="btn-primary" style="padding: 10px 20px;">
+                <i class="fas fa-pills"></i> Manage Medicines
+            </a>
+            <a href="{% url 'admin:core_user_changelist' %}" class="btn-primary" style="padding: 10px 20px;">
+                <i class="fas fa-users"></i> Manage Users
+            </a>
+            <a href="{% url 'admin:core_donationrequest_changelist' %}" class="btn-primary" style="padding: 10px 20px;">
+                <i class="fas fa-list"></i> Manage Requests
+            </a>
+            <a href="{% url 'admin:index' %}" class="btn-secondary" style="padding: 10px 20px;">
+                <i class="fas fa-cogs"></i> Admin Panel
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Export Options -->
+<div style="text-align: center; margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+    <p style="color: #666; margin-bottom: 15px;">
+        <i class="fas fa-download"></i> Export Data
+    </p>
+    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+        <button class="btn-secondary" style="padding: 8px 16px;" onclick="alert('CSV export will be implemented')">
+            <i class="fas fa-file-csv"></i> Download CSV
+        </button>
+        <button class="btn-secondary" style="padding: 8px 16px;" onclick="alert('PDF export will be implemented')">
+            <i class="fas fa-file-pdf"></i> Download PDF
+        </button>
+    </div>
+</div>
+{% endblock %}

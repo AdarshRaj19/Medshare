@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Request Medicine - MedShare{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 40px auto;">
+    <div class="card app-card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-hand-paper"></i> Request {{ medicine.name }}</h2>
+            <p style="color: #666; margin-top: 10px; font-size: 14px;">{{ medicine.quantity }} {{ medicine.unit }} available from {{ medicine.donor.username }}</p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div style="background: linear-gradient(135deg, rgba(46,204,113,0.1) 0%, rgba(52,73,94,0.1) 100%); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                <h3 style="color: var(--primary); margin-bottom: 15px;">Medicine Details</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; font-size: 14px;">
+                    <div>
+                        <p style="color: #999; margin-bottom: 3px;">Medicine Name</p>
+                        <p style="color: var(--dark); font-weight: bold;">{{ medicine.name }}</p>
+                    </div>
+                    <div>
+                        <p style="color: #999; margin-bottom: 3px;">Expiry Date</p>
+                        <p style="color: var(--dark); font-weight: bold;">{{ medicine.expiry_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div>
+                        <p style="color: #999; margin-bottom: 3px;">Available Quantity</p>
+                        <p style="color: var(--dark); font-weight: bold;">{{ medicine.quantity }} {{ medicine.unit }}</p>
+                    </div>
+                    <div>
+                        <p style="color: #999; margin-bottom: 3px;">Donor</p>
+                        <p style="color: var(--dark); font-weight: bold;">{{ medicine.donor.get_full_name|default:medicine.donor.username }}</p>
+                    </div>
+                </div>
+
+                {% if medicine.latitude and medicine.longitude %}
+                <div style="margin-top: 14px;">
+                    <div
+                        id="request-map"
+                        data-lat="{{ medicine.latitude }}"
+                        data-lng="{{ medicine.longitude }}"
+                        data-label="{{ medicine.location_name|default:'Pickup location'|escape }}"
+                        style="height: 220px; border-radius: 12px;"
+                    ></div>
+                    <p style="color: #6b7280; font-size: 12px; margin: 10px 0 0 0;">
+                        Pickup location: {{ medicine.location_name|default:"Not specified" }}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_quantity_requested"><i class="fas fa-cube"></i> Quantity Needed *</label>
+                {{ form.quantity_requested }}
+                <small style="color: #999;">Maximum: {{ medicine.quantity }} {{ medicine.unit }}</small>
+                {% if form.quantity_requested.errors %}
+                    <div style="color: #e74c3c; font-size: 12px;">{% for error in form.quantity_requested.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_message"><i class="fas fa-comment"></i> Message to Donor</label>
+                {{ form.message }}
+                <small style="color: #999;">Explain why you need this medicine (optional)</small>
+                {% if form.message.errors %}
+                    <div style="color: #e74c3c; font-size: 12px;">{% for error in form.message.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #f39c12; margin-bottom: 20px;">
+                <p style="color: #856404; margin: 0;">
+                    <i class="fas fa-info-circle"></i> 
+                    A request will be sent to the donor. They will review and confirm the donation.
+                </p>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; margin-bottom: 15px;">
+                <i class="fas fa-send"></i> Send Request
+            </button>
+
+            <a href="{% url 'ngo_dashboard' %}" class="btn-secondary" style="width: 100%; padding: 14px; text-align: center; display: block;">
+                <i class="fas fa-arrow-left"></i> Back to Search
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+    (function () {
+        const el = document.getElementById('request-map');
+        if (!el) return;
+
+        const lat = parseFloat(el.dataset.lat || '');
+        const lng = parseFloat(el.dataset.lng || '');
+        if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+
+        const map = L.map('request-map', { scrollWheelZoom: false }).setView([lat, lng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        const label = el.dataset.label || 'Pickup location';
+        L.marker([lat, lng]).addTo(map).bindPopup(label);
+    })();
+</script>
+{% endblock %}

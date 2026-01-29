@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Medicine - MedShare{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 700px; margin: 40px auto;">
+    <div class="card app-card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-edit"></i> Edit Medicine</h2>
+            <p style="color: #666; margin-top: 10px; font-size: 14px;">Update details for <strong>{{ medicine.name }}</strong></p>
+        </div>
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label class="form-label" for="id_name"><i class="fas fa-capsules"></i> Medicine Name *</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div style="color: #e74c3c; font-size: 12px;">{% for error in form.name.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="id_quantity"><i class="fas fa-weight"></i> Quantity *</label>
+                    {{ form.quantity }}
+                    {% if form.quantity.errors %}
+                        <div style="color: #e74c3c; font-size: 12px;">{% for error in form.quantity.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label class="form-label" for="id_unit"><i class="fas fa-cubes"></i> Unit</label>
+                    {{ form.unit }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="id_expiry_date"><i class="fas fa-calendar-times"></i> Expiry Date *</label>
+                    {{ form.expiry_date }}
+                    {% if form.expiry_date.errors %}
+                        <div style="color: #e74c3c; font-size: 12px;">{% for error in form.expiry_date.errors %}{{ error }}{% endfor %}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label class="form-label" for="id_manufacture_date"><i class="fas fa-calendar"></i> Manufacture Date</label>
+                    {{ form.manufacture_date }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="id_batch_number"><i class="fas fa-barcode"></i> Batch Number</label>
+                    {{ form.batch_number }}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_description"><i class="fas fa-align-left"></i> Description</label>
+                {{ form.description }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_storage_condition"><i class="fas fa-thermometer-half"></i> Storage Condition</label>
+                {{ form.storage_condition }}
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label class="form-label" for="id_latitude"><i class="fas fa-map-marker-alt"></i> Latitude</label>
+                    {{ form.latitude }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="id_longitude"><i class="fas fa-map-marker-alt"></i> Longitude</label>
+                    {{ form.longitude }}
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+                <label class="form-label"><i class="fas fa-map"></i> Adjust Location on Map</label>
+                <div id="picker-map" style="height: 300px; border-radius: 12px;"></div>
+                <small style="color: #999;">Click the map to move the marker; it will fill Latitude/Longitude.</small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_location_name"><i class="fas fa-building"></i> Location Name</label>
+                {{ form.location_name }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="id_image"><i class="fas fa-image"></i> Medicine Image</label>
+                {{ form.image }}
+                <small style="color: #999;">Uploading a new image will replace the current one.</small>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 14px; font-size: 16px; margin-bottom: 15px;">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+
+            <a href="{% url 'donor_dashboard' %}" class="btn-secondary" style="width: 100%; padding: 14px; font-size: 16px; text-align: center; display: block;">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+    (function () {
+        const mapEl = document.getElementById('picker-map');
+        if (!mapEl) return;
+
+        const latInput = document.getElementById('id_latitude');
+        const lngInput = document.getElementById('id_longitude');
+
+        const initialLat = parseFloat(latInput.value) || 20;
+        const initialLng = parseFloat(lngInput.value) || 0;
+        const initialZoom = (latInput.value && lngInput.value) ? 12 : 2;
+
+        const map = L.map('picker-map').setView([initialLat, initialLng], initialZoom);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        let marker = null;
+
+        function setMarker(lat, lng) {
+            latInput.value = lat.toFixed(6);
+            lngInput.value = lng.toFixed(6);
+            if (marker) marker.setLatLng([lat, lng]);
+            else marker = L.marker([lat, lng]).addTo(map);
+        }
+
+        if (latInput.value && lngInput.value) {
+            setMarker(parseFloat(latInput.value), parseFloat(lngInput.value));
+        }
+
+        map.on('click', function (e) {
+            setMarker(e.latlng.lat, e.latlng.lng);
+        });
+    })();
+</script>
+{% endblock %}
+
+
