@@ -6,72 +6,45 @@
 {% block content %}
 
 <!-- IMAGE CAROUSEL/SLIDER -->
-<!-- HERO CAROUSEL -->
-<div id="heroCarousel" class="carousel slide carousel-fade hero-carousel" data-bs-ride="carousel" data-bs-interval="5000">
-
-  <!-- Indicators -->
-  <div class="carousel-indicators">
-    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
-    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
-    <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
-  </div>
-
-  <!-- Slides -->
-  <div class="carousel-inner">
-
-    <!-- Slide 1 -->
-    <div class="carousel-item active">
-      <div class="hero-slide bg-slide-1">
-        <div class="container text-center text-white">
-          <h1 class="hero-title">
-            Welcome to <span class="text-success">MedShare</span>
-          </h1>
-          <p class="hero-subtitle">
-            Connecting Medicine Donors with Those in Need
-          </p>
-          <a href="#" class="btn btn-success btn-lg mt-3">Get Started</a>
+<div class="hero-carousel">
+    <div class="carousel-container">
+        <div class="carousel-slide active" style="background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(59,130,246,0.1) 100%), url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1200 400%22><rect fill=%22%2310b981%22 width=%221200%22 height=%22400%22/><path fill=%22%2310b981%22 d=%22M0 200 Q300 100 600 200 T1200 200 L1200 400 L0 400 Z%22 opacity=%220.3%22/></svg>') center/cover;">
+            <div class="carousel-content">
+                <h1 class="carousel-title">Welcome to <span>MedShare</span></h1>
+                <p class="carousel-subtitle">Connecting Medicine Donors with Those in Need</p>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Slide 2 -->
-    <div class="carousel-item">
-      <div class="hero-slide bg-slide-2">
-        <div class="container text-center text-white">
-          <h1 class="hero-title">Save Medicines, Save Lives</h1>
-          <p class="hero-subtitle">
-            Donate unused medicines before they expire
-          </p>
-          <a href="#" class="btn btn-primary btn-lg mt-3">Donate Now</a>
+        <div class="carousel-slide" style="background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(243,156,18,0.1) 100%), url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1200 400%22><rect fill=%223b82f6%22 width=%221200%22 height=%22400%22/><circle cx=%22300%22 cy=%22200%22 r=%22150%22 fill=%223b82f6%22 opacity=%220.3%22/></svg>') center/cover;">
+            <div class="carousel-content">
+                <h1 class="carousel-title">Save Medicines, Save Lives</h1>
+                <p class="carousel-subtitle">Donate unused medicines before they expire</p>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Slide 3 -->
-    <div class="carousel-item">
-      <div class="hero-slide bg-slide-3">
-        <div class="container text-center text-white">
-          <h1 class="hero-title">Find Medicines Near You</h1>
-          <p class="hero-subtitle">
-            AI-powered search for nearby donations
-          </p>
-          <a href="#" class="btn btn-warning btn-lg mt-3 text-dark">Search Medicines</a>
+        <div class="carousel-slide" style="background: linear-gradient(135deg, rgba(243,156,18,0.1) 0%, rgba(16,185,129,0.1) 100%), url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1200 400%22><rect fill=%22f39c12%22 width=%221200%22 height=%22400%22/><path fill=%22f39c12%22 d=%22M0 0 L600 200 L1200 0 L1200 400 L0 400 Z%22 opacity=%220.3%22/></svg>') center/cover;">
+            <div class="carousel-content">
+                <h1 class="carousel-title">Find Medicines Near You</h1>
+                <p class="carousel-subtitle">AI-powered search for available donations</p>
+            </div>
         </div>
-      </div>
+
+        <!-- Carousel Controls -->
+        <button class="carousel-btn carousel-prev" onclick="prevSlide()">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="carousel-btn carousel-next" onclick="nextSlide()">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+
+        <!-- Carousel Dots -->
+        <div class="carousel-dots">
+            <span class="dot active" onclick="currentSlide(0)"></span>
+            <span class="dot" onclick="currentSlide(1)"></span>
+            <span class="dot" onclick="currentSlide(2)"></span>
+        </div>
     </div>
-
-  </div>
-
-  <!-- Controls -->
-  <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
-    <span class="carousel-control-prev-icon"></span>
-  </button>
-
-  <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
-    <span class="carousel-control-next-icon"></span>
-  </button>
 </div>
-
 
 <!-- HERO TEXT SECTION -->
 <section class="hero-content">
