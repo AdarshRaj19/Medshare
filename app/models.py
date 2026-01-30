@@ -3,9 +3,45 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 
+class MedicineCategory(models.Model):
+    """Medicine categories for better organization"""
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True, null=True)
+    icon = models.CharField(max_length=50, blank=True, null=True)  # FontAwesome icon class
+    color = models.CharField(max_length=7, default='#007bff')  # Hex color
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Medicine Categories"
+
+    def __str__(self):
+        return self.name
+
+
+class MedicineSubcategory(models.Model):
+    """Subcategories within medicine categories"""
+    category = models.ForeignKey(MedicineCategory, on_delete=models.CASCADE, related_name='subcategories')
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('category', 'name')
+        verbose_name_plural = "Medicine Subcategories"
+
+    def __str__(self):
+        return f"{self.category.name} - {self.name}"
+
+
 class UserProfile(models.Model):
-    ROLE_CHOICES = [('donor', 'Donor'), ('ngo', 'NGO'), ('delivery_boy', 'Delivery Boy'), ('admin', 'Admin')]
-    
+    ROLE_CHOICES = [
+        ('donor', 'Donor'),
+        ('ngo', 'NGO'),
+        ('delivery_boy', 'Delivery Boy'),
+        ('admin', 'Admin')
+    ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='donor')
     phone = models.CharField(max_length=20, blank=True, null=True)
@@ -15,6 +51,11 @@ class UserProfile(models.Model):
     bio = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
     verified = models.BooleanField(default=False)
+    license_number = models.CharField(max_length=100, blank=True, null=True)  # For NGOs
+    emergency_contact = models.CharField(max_length=20, blank=True, null=True)
+    preferred_contact_method = models.CharField(max_length=20, choices=[
+        ('email', 'Email'), ('phone', 'Phone'), ('both', 'Both')
+    ], default='email')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -28,23 +69,48 @@ class Medicine(models.Model):
         ('requested', 'Requested'),
         ('donated', 'Donated'),
         ('expired', 'Expired'),
-        ('cancelled', 'Cancelled')
+        ('cancelled', 'Cancelled'),
+        ('quality_check', 'Quality Check'),
+        ('distributed', 'Distributed')
+    ]
+    
+    CONDITION_CHOICES = [
+        ('new', 'New/Sealed'),
+        ('opened', 'Opened but Unused'),
+        ('partial', 'Partially Used'),
+        ('unknown', 'Unknown')
     ]
     
     donor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='medicines')
+    category = models.ForeignKey(MedicineCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='medicines')
+    subcategory = models.ForeignKey(MedicineSubcategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='medicines')
     name = models.CharField(max_length=100)
+    generic_name = models.CharField(max_length=100, blank=True, null=True)
+    brand_name = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
+    composition = models.TextField(blank=True, null=True)  # Active ingredients
+    dosage_form = models.CharField(max_length=50, blank=True, null=True)  # Tablet, Syrup, Injection, etc.
+    strength = models.CharField(max_length=50, blank=True, null=True)  # 500mg, 10ml, etc.
     quantity = models.IntegerField(validators=[MinValueValidator(1)])
     unit = models.CharField(max_length=20, default='units')
+    condition = models.CharField(max_length=20, choices=CONDITION_CHOICES, default='new')
     expiry_date = models.DateField()
     manufacture_date = models.DateField(blank=True, null=True)
     batch_number = models.CharField(max_length=100, blank=True, null=True)
+    manufacturer = models.CharField(max_length=100, blank=True, null=True)
     storage_condition = models.CharField(max_length=100, blank=True, null=True)
+    usage_instructions = models.TextField(blank=True, null=True)
+    side_effects = models.TextField(blank=True, null=True)
+    contraindications = models.TextField(blank=True, null=True)
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
     location_name = models.CharField(max_length=200, blank=True, null=True)
+    pickup_available = models.BooleanField(default=True)
+    delivery_available = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
     image = models.ImageField(upload_to='medicines/', null=True, blank=True)
+    prescription_required = models.BooleanField(default=False)
+    verified_by_admin = models.BooleanField(default=False)
     
     # AI/Recommendation fields
     rating = models.FloatField(default=0, validators=[MinValueValidator(0), MaxValueValidator(5)])
@@ -55,6 +121,32 @@ class Medicine(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     viewed_by = models.ManyToManyField(User, related_name='viewed_medicines', blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} ({self.quantity} {self.unit})"
+    
+    def days_until_expiry(self):
+        from datetime import date
+        return (self.expiry_date - date.today()).days
+    
+    def is_expiring_soon(self):
+        return 0 <= self.days_until_expiry() <= 30
+    
+    def is_expired(self):
+        from datetime import date
+        return self.expiry_date < date.today()
+    
+    def get_display_name(self):
+        """Return formatted medicine name with brand and generic"""
+        if self.brand_name and self.generic_name:
+            return f"{self.brand_name} ({self.generic_name})"
+        elif self.brand_name:
+            return self.brand_name
+        else:
+            return self.name
 
     class Meta:
         ordering = ['-created_at']
@@ -196,6 +288,161 @@ class FAQ(models.Model):
         return self.question
 
 
+class MedicineVerification(models.Model):
+    """Quality verification for medicines"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('requires_info', 'More Info Required')
+    ]
+    
+    medicine = models.OneToOneField(Medicine, on_delete=models.CASCADE, related_name='verification')
+    verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    notes = models.TextField(blank=True, null=True)
+    rejection_reason = models.TextField(blank=True, null=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Verification for {self.medicine.name}"
+
+
+class EmergencyAlert(models.Model):
+    """Emergency medicine requests"""
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical')
+    ]
+    
+    ngo = models.ForeignKey(User, on_delete=models.CASCADE, related_name='emergency_alerts')
+    medicine_category = models.ForeignKey(MedicineCategory, on_delete=models.CASCADE)
+    medicine_name = models.CharField(max_length=100)
+    quantity_needed = models.IntegerField(validators=[MinValueValidator(1)])
+    unit = models.CharField(max_length=20, default='units')
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    description = models.TextField()
+    patient_count = models.IntegerField(null=True, blank=True)
+    deadline = models.DateTimeField(null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    location_name = models.CharField(max_length=200, blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-priority', '-created_at']
+
+    def __str__(self):
+        return f"Emergency: {self.medicine_name} - {self.ngo.username}"
+
+    def is_expired(self):
+        if self.deadline:
+            return timezone.now() > self.deadline
+        return False
+
+
+class AuditLog(models.Model):
+    """Audit trail for all important actions"""
+    ACTION_CHOICES = [
+        ('create', 'Create'),
+        ('update', 'Update'),
+        ('delete', 'Delete'),
+        ('view', 'View'),
+        ('approve', 'Approve'),
+        ('reject', 'Reject'),
+        ('donate', 'Donate'),
+        ('request', 'Request'),
+        ('login', 'Login'),
+        ('logout', 'Logout')
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    model_name = models.CharField(max_length=50)
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    object_repr = models.CharField(max_length=200, blank=True, null=True)
+    changes = models.JSONField(null=True, blank=True)  # Store what changed
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['user', 'action']),
+            models.Index(fields=['model_name', 'object_id']),
+            models.Index(fields=['timestamp']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username if self.user else 'Anonymous'} - {self.action} - {self.model_name}"
+
+
+class BulkDonationRequest(models.Model):
+    """NGOs can request multiple medicines at once"""
+    ngo = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bulk_requests')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=20, choices=[
+        ('draft', 'Draft'),
+        ('submitted', 'Submitted'),
+        ('partial', 'Partially Fulfilled'),
+        ('completed', 'Completed'),
+        ('cancelled', 'Cancelled')
+    ], default='draft')
+    priority = models.CharField(max_length=10, choices=[
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent')
+    ], default='medium')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Bulk Request: {self.title} - {self.ngo.username}"
+
+
+class BulkDonationItem(models.Model):
+    """Individual items in a bulk donation request"""
+    bulk_request = models.ForeignKey(BulkDonationRequest, on_delete=models.CASCADE, related_name='items')
+    medicine_category = models.ForeignKey(MedicineCategory, on_delete=models.CASCADE)
+    medicine_name = models.CharField(max_length=100)
+    quantity_requested = models.IntegerField(validators=[MinValueValidator(1)])
+    unit = models.CharField(max_length=20, default='units')
+    urgency_level = models.CharField(max_length=10, choices=[
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('critical', 'Critical')
+    ], default='medium')
+    notes = models.TextField(blank=True, null=True)
+    fulfilled_quantity = models.IntegerField(default=0)
+    status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('partial', 'Partially Fulfilled'),
+        ('fulfilled', 'Fulfilled'),
+        ('cancelled', 'Cancelled')
+    ], default='pending')
+
+    def __str__(self):
+        return f"{self.medicine_name} ({self.quantity_requested} {self.unit})"
+
+    @property
+    def remaining_quantity(self):
+        return max(0, self.quantity_requested - self.fulfilled_quantity)
+
+
 class PasswordResetToken(models.Model):
     """Password reset tokens"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reset_tokens')
@@ -206,7 +453,6 @@ class PasswordResetToken(models.Model):
 
     def __str__(self):
         return f"Reset token for {self.user.username}"
-
 class PickupDelivery(models.Model):
     """Track pickup and delivery of medicines from donor to NGO/Hospital"""
     STATUS_CHOICES = [
@@ -360,3 +606,66 @@ class DeliveryLocation(models.Model):
     def get_coordinates(self):
         """Return coordinates as tuple"""
         return (self.latitude, self.longitude)
+ 
+class MedicineReport(models.Model):
+    """Monthly/quarterly medicine donation reports"""
+    REPORT_TYPE_CHOICES = [
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly'),
+        ('annual', 'Annual')
+    ]
+    
+    report_type = models.CharField(max_length=20, choices=REPORT_TYPE_CHOICES)
+    year = models.IntegerField()
+    month = models.IntegerField(null=True, blank=True)  # For monthly reports
+    quarter = models.IntegerField(null=True, blank=True)  # For quarterly reports
+    
+    # Statistics
+    total_medicines_donated = models.IntegerField(default=0)
+    total_donors = models.IntegerField(default=0)
+    total_ngos = models.IntegerField(default=0)
+    total_requests_fulfilled = models.IntegerField(default=0)
+    medicines_by_category = models.JSONField(default=dict)
+    top_donors = models.JSONField(default=list)
+    top_ngos = models.JSONField(default=list)
+    
+    # Emergency stats
+    emergency_alerts_created = models.IntegerField(default=0)
+    emergency_alerts_resolved = models.IntegerField(default=0)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('report_type', 'year', 'month', 'quarter')
+        ordering = ['-year', '-month', '-quarter']
+
+    def __str__(self):
+        period = f"{self.year}"
+        if self.month:
+            period += f"-{self.month:02d}"
+        elif self.quarter:
+            period += f"-Q{self.quarter}"
+        return f"{self.get_report_type_display()} Report - {period}"
+
+
+class MedicineInventory(models.Model):
+    """Track medicine inventory levels for NGOs"""
+    ngo = models.ForeignKey(User, on_delete=models.CASCADE, related_name='inventory')
+    medicine_category = models.ForeignKey(MedicineCategory, on_delete=models.CASCADE)
+    medicine_name = models.CharField(max_length=100)
+    current_stock = models.IntegerField(default=0)
+    minimum_stock_level = models.IntegerField(default=0)
+    unit = models.CharField(max_length=20, default='units')
+    last_updated = models.DateTimeField(auto_now=True)
+    auto_reorder = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('ngo', 'medicine_category', 'medicine_name')
+
+    def __str__(self):
+        return f"{self.ngo.username} - {self.medicine_name}"
+
+    @property
+    def needs_reorder(self):
+        return self.current_stock <= self.minimum_stock_level
+

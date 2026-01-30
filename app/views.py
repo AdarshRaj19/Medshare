@@ -16,14 +16,18 @@ from io import BytesIO
 import csv
 
 from .models import (
-    Medicine, DonationRequest, UserProfile, MedicineRating, 
+    Medicine, DonationRequest, UserProfile, MedicineRating,
     MedicineSearchLog, Notification, ContactMessage, Testimonial, FAQ, PasswordResetToken,
-    PickupDelivery, DeliveryBoy, Delivery, DeliveryLocation
+    PickupDelivery, DeliveryBoy, Delivery, DeliveryLocation,
+    MedicineCategory, MedicineSubcategory, MedicineVerification, EmergencyAlert,
+    AuditLog, BulkDonationRequest, BulkDonationItem, MedicineReport, MedicineInventory
 )
 from .forms import (
     MedicineForm, UserSignupForm, UserProfileForm, UserLoginForm,
     DonationRequestForm, MedicineRatingForm, MedicineSearchForm,
-    ContactMessageForm, ForgotPasswordForm, ResetPasswordForm, TestimonialForm
+    ContactMessageForm, ForgotPasswordForm, ResetPasswordForm, TestimonialForm,
+    EmergencyAlertForm, BulkDonationRequestForm, BulkDonationItemForm,
+    MedicineVerificationForm, MedicineInventoryForm, AdvancedMedicineSearchForm
 )
 from .recommender import MedicineRecommender
 
@@ -903,7 +907,6 @@ def testimonials(request):
     context = {'testimonials': testimonials_list}
     return render(request, 'testimonials.html', context)
 
-
 @login_required
 def pickup_delivery_dashboard(request):
     """Pickup and Delivery tracking dashboard for donors and NGOs"""
@@ -1451,3 +1454,502 @@ def get_delivery_status(request, delivery_id):
         'picked_up_at': delivery.picked_up_at.isoformat() if delivery.picked_up_at else None,
         'delivered_at': delivery.delivered_at.isoformat() if delivery.delivered_at else None,
     })
+ 
+# ============= EMERGENCY ALERTS =============
+
+@login_required
+def emergency_alerts(request):
+    """View all active emergency alerts"""
+    alerts = EmergencyAlert.objects.filter(is_active=True).order_by('-priority', '-created_at')
+    
+    # Add time remaining for each alert
+    for alert in alerts:
+        if alert.deadline:
+            alert.time_remaining = alert.deadline - timezone.now()
+            alert.is_expired = alert.time_remaining.total_seconds() < 0
+            if not alert.is_expired:
+                alert.hours_remaining = int(alert.time_remaining.seconds // 3600)
+            else:
+                alert.hours_remaining = 0
+        else:
+            alert.time_remaining = None
+            alert.is_expired = False
+            alert.hours_remaining = None
+
+    context = {
+        'alerts': alerts,
+        'total_alerts': alerts.count(),
+        'critical_alerts': alerts.filter(priority='critical').count(),
+    }
+    return render(request, 'emergency_alerts.html', context)
+
+
+@login_required
+def create_emergency_alert(request):
+    """Create emergency alert (NGO only)"""
+    if request.user.profile.role != 'ngo':
+        messages.error(request, "Only NGOs can create emergency alerts.")
+        return redirect('home')
+
+    if request.method == 'POST':
+        category_id = request.POST.get('medicine_category')
+        medicine_name = request.POST.get('medicine_name')
+        quantity_needed = request.POST.get('quantity_needed')
+        unit = request.POST.get('unit', 'units')
+        priority = request.POST.get('priority', 'medium')
+        description = request.POST.get('description')
+        patient_count = request.POST.get('patient_count')
+        deadline = request.POST.get('deadline')
+        latitude = request.POST.get('latitude')
+        longitude = request.POST.get('longitude')
+        location_name = request.POST.get('location_name')
+
+        try:
+            category = MedicineCategory.objects.get(id=category_id)
+            alert = EmergencyAlert.objects.create(
+                ngo=request.user,
+                medicine_category=category,
+                medicine_name=medicine_name,
+                quantity_needed=int(quantity_needed),
+                unit=unit,
+                priority=priority,
+                description=description,
+                patient_count=int(patient_count) if patient_count else None,
+                deadline=deadline if deadline else None,
+                latitude=float(latitude) if latitude else None,
+                longitude=float(longitude) if longitude else None,
+                location_name=location_name or request.user.profile.organization_name,
+            )
+            
+            # Create notifications for donors who have similar medicines
+            similar_medicines = Medicine.objects.filter(
+                category=category,
+                status='available',
+                donor__profile__preferred_contact_method__in=['email', 'both']
+            )
+            
+            for medicine in similar_medicines[:10]:  # Limit to 10 donors
+                Notification.objects.create(
+                    user=medicine.donor,
+                    title='Emergency Medicine Alert',
+                    message=f'Urgent need for {medicine_name} at {request.user.profile.organization_name}. Priority: {priority.upper()}',
+                )
+            
+            messages.success(request, "Emergency alert created successfully!")
+            return redirect('emergency_alerts')
+            
+        except Exception as e:
+            messages.error(request, f"Error creating alert: {str(e)}")
+    
+    categories = MedicineCategory.objects.filter(active=True)
+    context = {'categories': categories}
+    return render(request, 'create_emergency_alert.html', context)
+
+
+@login_required
+def resolve_emergency_alert(request, alert_id):
+    """Resolve emergency alert (NGO only)"""
+    alert = get_object_or_404(EmergencyAlert, id=alert_id, ngo=request.user)
+    
+    if request.method == 'POST':
+        alert.is_active = False
+        alert.resolved_at = timezone.now()
+        alert.save()
+        messages.success(request, "Emergency alert resolved.")
+        return redirect('emergency_alerts')
+    
+    return redirect('emergency_alerts')
+
+
+# ============= BULK DONATION REQUESTS =============
+
+@login_required
+def bulk_requests(request):
+    """View bulk donation requests (NGO dashboard)"""
+    if request.user.profile.role != 'ngo':
+        return redirect('home')
+    
+    requests = BulkDonationRequest.objects.filter(ngo=request.user).order_by('-created_at')
+    
+    context = {
+        'bulk_requests': requests,
+        'draft_count': requests.filter(status='draft').count(),
+        'submitted_count': requests.filter(status='submitted').count(),
+        'completed_count': requests.filter(status='completed').count(),
+    }
+    return render(request, 'bulk_requests.html', context)
+
+
+@login_required
+def create_bulk_request(request):
+    """Create bulk donation request (NGO only)"""
+    if request.user.profile.role != 'ngo':
+        messages.error(request, "Only NGOs can create bulk requests.")
+        return redirect('home')
+
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        priority = request.POST.get('priority', 'medium')
+        
+        bulk_request = BulkDonationRequest.objects.create(
+            ngo=request.user,
+            title=title,
+            description=description,
+            priority=priority,
+            status='draft'
+        )
+        
+        messages.success(request, "Bulk request created! Add items to it.")
+        return redirect('edit_bulk_request', request_id=bulk_request.id)
+    
+    return render(request, 'create_bulk_request.html')
+
+
+@login_required
+def edit_bulk_request(request, request_id):
+    """Edit bulk donation request"""
+    bulk_request = get_object_or_404(BulkDonationRequest, id=request_id, ngo=request.user)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'add_item':
+            category_id = request.POST.get('medicine_category')
+            medicine_name = request.POST.get('medicine_name')
+            quantity = request.POST.get('quantity_requested')
+            unit = request.POST.get('unit', 'units')
+            urgency = request.POST.get('urgency_level', 'medium')
+            notes = request.POST.get('notes')
+            
+            try:
+                category = MedicineCategory.objects.get(id=category_id)
+                BulkDonationItem.objects.create(
+                    bulk_request=bulk_request,
+                    medicine_category=category,
+                    medicine_name=medicine_name,
+                    quantity_requested=int(quantity),
+                    unit=unit,
+                    urgency_level=urgency,
+                    notes=notes,
+                )
+                messages.success(request, "Item added to bulk request.")
+            except Exception as e:
+                messages.error(request, f"Error adding item: {str(e)}")
+                
+        elif action == 'submit':
+            if bulk_request.items.count() > 0:
+                bulk_request.status = 'submitted'
+                bulk_request.submitted_at = timezone.now()
+                bulk_request.save()
+                messages.success(request, "Bulk request submitted successfully!")
+                return redirect('bulk_requests')
+            else:
+                messages.error(request, "Add at least one item before submitting.")
+                
+        elif action == 'delete_item':
+            item_id = request.POST.get('item_id')
+            try:
+                item = BulkDonationItem.objects.get(id=item_id, bulk_request=bulk_request)
+                item.delete()
+                messages.success(request, "Item removed.")
+            except BulkDonationItem.DoesNotExist:
+                messages.error(request, "Item not found.")
+    
+    categories = MedicineCategory.objects.filter(active=True)
+    context = {
+        'bulk_request': bulk_request,
+        'categories': categories,
+    }
+    return render(request, 'edit_bulk_request.html', context)
+
+
+@login_required
+def bulk_request_matches(request, request_id):
+    """Find matching medicines for bulk request items"""
+    bulk_request = get_object_or_404(BulkDonationRequest, id=request_id)
+    
+    # Check permissions
+    if request.user != bulk_request.ngo and not request.user.is_superuser:
+        return redirect('home')
+    
+    matches = {}
+    for item in bulk_request.items.filter(status__in=['pending', 'partial']):
+        # Find medicines that match this item
+        matching_medicines = Medicine.objects.filter(
+            status='available',
+            category=item.medicine_category,
+            name__icontains=item.medicine_name.split()[0]  # Match first word
+        ).annotate(
+            avg_rating=Avg('ratings__rating'),
+            ratings_count=Count('ratings')
+        )[:5]  # Limit to 5 matches per item
+        
+        matches[item.id] = matching_medicines
+    
+    context = {
+        'bulk_request': bulk_request,
+        'matches': matches,
+    }
+    return render(request, 'bulk_request_matches.html', context)
+
+
+# ============= MEDICINE CATEGORIES =============
+
+def medicine_categories(request):
+    """Browse medicines by category"""
+    categories = MedicineCategory.objects.filter(active=True).prefetch_related('medicines')
+    
+    # Add medicine count for each category
+    for category in categories:
+        category.medicine_count = category.medicines.filter(status='available').count()
+    
+    context = {
+        'categories': categories,
+    }
+    return render(request, 'medicine_categories.html', context)
+
+
+def category_medicines(request, category_id):
+    """View medicines in a specific category"""
+    category = get_object_or_404(MedicineCategory, id=category_id, active=True)
+    
+    medicines = Medicine.objects.filter(
+        category=category,
+        status='available'
+    ).annotate(
+        avg_rating=Avg('ratings__rating'),
+        ratings_count=Count('ratings')
+    ).order_by('-created_at')
+    
+    # Apply filters
+    subcategory_id = request.GET.get('subcategory')
+    if subcategory_id:
+        medicines = medicines.filter(subcategory_id=subcategory_id)
+    
+    prescription = request.GET.get('prescription')
+    if prescription == 'required':
+        medicines = medicines.filter(prescription_required=True)
+    elif prescription == 'not_required':
+        medicines = medicines.filter(prescription_required=False)
+    
+    condition = request.GET.get('condition')
+    if condition:
+        medicines = medicines.filter(condition=condition)
+    
+    context = {
+        'category': category,
+        'medicines': medicines,
+        'subcategories': category.subcategories.filter(active=True),
+    }
+    return render(request, 'category_medicines.html', context)
+
+
+# ============= MEDICINE VERIFICATION =============
+
+@user_passes_test(lambda u: u.is_superuser)
+def medicine_verifications(request):
+    """Admin view for medicine verifications"""
+    verifications = MedicineVerification.objects.select_related(
+        'medicine', 'medicine__donor', 'verified_by'
+    ).order_by('-created_at')
+    
+    pending_count = verifications.filter(status='pending').count()
+    approved_count = verifications.filter(status='approved').count()
+    rejected_count = verifications.filter(status='rejected').count()
+    
+    context = {
+        'verifications': verifications,
+        'pending_count': pending_count,
+        'approved_count': approved_count,
+        'rejected_count': rejected_count,
+    }
+    return render(request, 'medicine_verifications.html', context)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def verify_medicine(request, verification_id):
+    """Approve or reject medicine verification"""
+    verification = get_object_or_404(MedicineVerification, id=verification_id)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        notes = request.POST.get('notes')
+        
+        if action == 'approve':
+            verification.status = 'approved'
+            verification.verified_by = request.user
+            verification.verified_at = timezone.now()
+            verification.medicine.verified_by_admin = True
+            verification.medicine.status = 'available'  # Make available after verification
+            verification.medicine.save()
+            
+            # Notify donor
+            Notification.objects.create(
+                user=verification.medicine.donor,
+                title='Medicine Verified',
+                message=f'Your {verification.medicine.name} has been verified and is now available for donation.',
+            )
+            
+        elif action == 'reject':
+            verification.status = 'rejected'
+            verification.verified_by = request.user
+            verification.rejection_reason = request.POST.get('rejection_reason')
+            verification.verified_at = timezone.now()
+            verification.medicine.status = 'quality_check'
+            verification.medicine.save()
+            
+            # Notify donor
+            Notification.objects.create(
+                user=verification.medicine.donor,
+                title='Medicine Verification Failed',
+                message=f'Your {verification.medicine.name} could not be verified. Reason: {verification.rejection_reason}',
+            )
+        
+        verification.notes = notes
+        verification.save()
+        messages.success(request, f"Medicine {action}d successfully.")
+        return redirect('medicine_verifications')
+    
+    context = {'verification': verification}
+    return render(request, 'verify_medicine.html', context)
+
+
+# ============= INVENTORY MANAGEMENT =============
+
+@login_required
+def ngo_inventory(request):
+    """NGO inventory management"""
+    if request.user.profile.role != 'ngo':
+        return redirect('home')
+    
+    inventory_items = MedicineInventory.objects.filter(ngo=request.user).select_related('medicine_category')
+    
+    # Calculate reorder alerts
+    reorder_alerts = inventory_items.filter(
+        current_stock__lte=models.F('minimum_stock_level')
+    )
+    
+    context = {
+        'inventory_items': inventory_items,
+        'reorder_alerts': reorder_alerts,
+        'total_items': inventory_items.count(),
+        'low_stock_count': reorder_alerts.count(),
+    }
+    return render(request, 'ngo_inventory.html', context)
+
+
+@login_required
+def update_inventory(request, inventory_id):
+    """Update inventory stock levels"""
+    inventory_item = get_object_or_404(MedicineInventory, id=inventory_id, ngo=request.user)
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        quantity = int(request.POST.get('quantity', 0))
+        
+        if action == 'add':
+            inventory_item.current_stock += quantity
+        elif action == 'subtract':
+            inventory_item.current_stock = max(0, inventory_item.current_stock - quantity)
+        elif action == 'set':
+            inventory_item.current_stock = quantity
+        
+        inventory_item.save()
+        messages.success(request, "Inventory updated successfully.")
+        return redirect('ngo_inventory')
+    
+    context = {'inventory_item': inventory_item}
+    return render(request, 'update_inventory.html', context)
+
+
+# ============= API ENDPOINTS FOR REAL-TIME FEATURES =============
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+@api_view(['GET'])
+def api_medicine_search(request):
+    """API endpoint for medicine search with filters"""
+    query = request.GET.get('q', '')
+    category = request.GET.get('category')
+    latitude = request.GET.get('lat')
+    longitude = request.GET.get('lng')
+    radius = request.GET.get('radius', 50)  # km
+    
+    medicines = Medicine.objects.filter(status='available')
+    
+    if query:
+        medicines = medicines.filter(
+            Q(name__icontains=query) |
+            Q(generic_name__icontains=query) |
+            Q(brand_name__icontains=query)
+        )
+    
+    if category:
+        medicines = medicines.filter(category_id=category)
+    
+    # Location-based filtering
+    if latitude and longitude:
+        # Simple distance calculation (for production, use a proper GIS library)
+        lat, lng = float(latitude), float(longitude)
+        radius_deg = float(radius) / 111  # Rough conversion km to degrees
+        
+        medicines = medicines.filter(
+            latitude__range=(lat - radius_deg, lat + radius_deg),
+            longitude__range=(lng - radius_deg, lng + radius_deg)
+        )
+    
+    medicines = medicines.annotate(
+        avg_rating=Avg('ratings__rating'),
+        ratings_count=Count('ratings')
+    )[:50]  # Limit results
+    
+    data = []
+    for med in medicines:
+        data.append({
+            'id': med.id,
+            'name': med.get_display_name(),
+            'quantity': med.quantity,
+            'unit': med.unit,
+            'expiry_date': med.expiry_date,
+            'rating': med.rating,
+            'rating_count': med.rating_count,
+            'latitude': med.latitude,
+            'longitude': med.longitude,
+            'location_name': med.location_name,
+            'category': med.category.name if med.category else None,
+            'prescription_required': med.prescription_required,
+        })
+    
+    return Response(data)
+
+
+@api_view(['GET'])
+def api_emergency_alerts(request):
+    """API endpoint for emergency alerts"""
+    alerts = EmergencyAlert.objects.filter(is_active=True).select_related(
+        'ngo', 'medicine_category'
+    ).order_by('-priority', '-created_at')[:20]
+    
+    data = []
+    for alert in alerts:
+        data.append({
+            'id': alert.id,
+            'ngo_name': alert.ngo.profile.organization_name,
+            'medicine_name': alert.medicine_name,
+            'category': alert.medicine_category.name,
+            'quantity_needed': alert.quantity_needed,
+            'unit': alert.unit,
+            'priority': alert.priority,
+            'description': alert.description,
+            'patient_count': alert.patient_count,
+            'deadline': alert.deadline,
+            'latitude': alert.latitude,
+            'longitude': alert.longitude,
+            'location_name': alert.location_name,
+            'created_at': alert.created_at,
+        })
+    
+    return Response(data)
+

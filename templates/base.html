@@ -66,9 +66,22 @@
                 <i class="fas fa-search"></i>
             </a>
 
+            <a href="{% url 'medicine_categories' %}" title="Medicine Categories">
+                <i class="fas fa-th-large"></i>
+            </a>
+
             <a href="{% url 'medicines_map' %}" title="Medicine Map">
                 <i class="fas fa-map"></i>
             </a>
+
+            {% if user.profile.role == "ngo" %}
+            <a href="{% url 'emergency_alerts' %}" title="Emergency Alerts">
+                <i class="fas fa-exclamation-triangle"></i>
+            </a>
+            <a href="{% url 'bulk_requests' %}" title="Bulk Requests">
+                <i class="fas fa-list-check"></i>
+            </a>
+            {% endif %}
 
             <a href="{% url 'notifications' %}" title="Notifications">
                 <i class="fas fa-bell"></i>

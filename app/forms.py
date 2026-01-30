@@ -2,30 +2,82 @@ from django import forms
 from django.contrib.auth.models import User
 from .models import (
     Medicine, UserProfile, DonationRequest, MedicineRating,
-    ContactMessage, Testimonial
+    ContactMessage, Testimonial, MedicineCategory, MedicineSubcategory,
+    EmergencyAlert, BulkDonationRequest, BulkDonationItem, MedicineVerification,
+    MedicineInventory
 )
 
 
 class MedicineForm(forms.ModelForm):
+    category = forms.ModelChoiceField(
+        queryset=MedicineCategory.objects.filter(active=True),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Medicine Category'
+    )
+    subcategory = forms.ModelChoiceField(
+        queryset=MedicineSubcategory.objects.filter(active=True),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Subcategory'
+    )
+    
     class Meta:
         model = Medicine
-        fields = ['name', 'description', 'quantity', 'unit', 'expiry_date', 
-                  'manufacture_date', 'batch_number', 'storage_condition',
-                  'latitude', 'longitude', 'location_name', 'image']
+        fields = [
+            'name', 'brand_name', 'generic_name', 'category', 'subcategory',
+            'description', 'dosage_form', 'strength', 'composition', 'quantity', 'unit',
+            'condition', 'expiry_date', 'manufacture_date', 'batch_number', 'manufacturer',
+            'storage_condition', 'usage_instructions', 'side_effects', 'contraindications',
+            'prescription_required', 'pickup_available', 'delivery_available',
+            'latitude', 'longitude', 'location_name', 'image'
+        ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Medicine Name'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Description'}),
+            'brand_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Brand Name (e.g., Tylenol)'}),
+            'generic_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Generic Name (e.g., Paracetamol)'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Detailed Description'}),
+            'dosage_form': forms.Select(attrs={'class': 'form-control'}, choices=[
+                ('', 'Select Dosage Form'),
+                ('Tablet', 'Tablet'),
+                ('Capsule', 'Capsule'),
+                ('Syrup', 'Syrup'),
+                ('Injection', 'Injection'),
+                ('Cream', 'Cream/Ointment'),
+                ('Drops', 'Drops'),
+                ('Other', 'Other'),
+            ]),
+            'strength': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 500mg, 10ml'}),
+            'composition': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Active ingredients'}),
             'quantity': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Quantity'}),
-            'unit': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., tablets, bottles'}),
+            'unit': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., tablets, bottles, vials'}),
+            'condition': forms.Select(attrs={'class': 'form-control'}),
             'expiry_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'manufacture_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'batch_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Batch Number'}),
-            'storage_condition': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Storage Condition'}),
+            'batch_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Batch/Lot Number'}),
+            'manufacturer': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Manufacturer Name'}),
+            'storage_condition': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Room temperature, Refrigerate'}),
+            'usage_instructions': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'How to use'}),
+            'side_effects': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Common side effects'}),
+            'contraindications': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'When not to use'}),
+            'prescription_required': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'pickup_available': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'delivery_available': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'latitude': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Latitude', 'step': '0.0001'}),
             'longitude': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Longitude', 'step': '0.0001'}),
             'location_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Location Name'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filter subcategories based on selected category
+        if self.instance and self.instance.category:
+            self.fields['subcategory'].queryset = MedicineSubcategory.objects.filter(
+                category=self.instance.category, active=True
+            )
+        else:
+            self.fields['subcategory'].queryset = MedicineSubcategory.objects.none()
 
 
 class UserSignupForm(forms.ModelForm):
@@ -190,3 +242,137 @@ class TestimonialForm(forms.ModelForm):
             'message': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Share your story...'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
         }
+
+
+# ============= NEW FORMS FOR ENHANCED FEATURES =============
+
+class EmergencyAlertForm(forms.ModelForm):
+    class Meta:
+        model = EmergencyAlert
+        fields = [
+            'medicine_category', 'medicine_name', 'quantity_needed', 'unit',
+            'priority', 'description', 'patient_count', 'deadline',
+            'latitude', 'longitude', 'location_name'
+        ]
+        widgets = {
+            'medicine_category': forms.Select(attrs={'class': 'form-control'}),
+            'medicine_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Specific medicine name'}),
+            'quantity_needed': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Quantity needed'}),
+            'unit': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., tablets, bottles'}),
+            'priority': forms.Select(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Describe the emergency situation'}),
+            'patient_count': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Number of patients affected'}),
+            'deadline': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'latitude': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Latitude', 'step': '0.0001'}),
+            'longitude': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Longitude', 'step': '0.0001'}),
+            'location_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Location name'}),
+        }
+
+
+class BulkDonationRequestForm(forms.ModelForm):
+    class Meta:
+        model = BulkDonationRequest
+        fields = ['title', 'description', 'priority']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Request Title'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Describe your bulk medicine needs'}),
+            'priority': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+
+class BulkDonationItemForm(forms.ModelForm):
+    class Meta:
+        model = BulkDonationItem
+        fields = ['medicine_category', 'medicine_name', 'quantity_requested', 'unit', 'urgency_level', 'notes']
+        widgets = {
+            'medicine_category': forms.Select(attrs={'class': 'form-control'}),
+            'medicine_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Specific medicine name'}),
+            'quantity_requested': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Quantity needed'}),
+            'unit': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., tablets, bottles'}),
+            'urgency_level': forms.Select(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Additional notes'}),
+        }
+
+
+class MedicineVerificationForm(forms.ModelForm):
+    class Meta:
+        model = MedicineVerification
+        fields = ['status', 'notes', 'rejection_reason']
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-control'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Verification notes'}),
+            'rejection_reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Reason for rejection'}),
+        }
+
+
+class MedicineInventoryForm(forms.ModelForm):
+    class Meta:
+        model = MedicineInventory
+        fields = ['medicine_category', 'medicine_name', 'current_stock', 'minimum_stock_level', 'unit', 'auto_reorder']
+        widgets = {
+            'medicine_category': forms.Select(attrs={'class': 'form-control'}),
+            'medicine_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Medicine name'}),
+            'current_stock': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Current stock level'}),
+            'minimum_stock_level': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minimum stock level'}),
+            'unit': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Unit of measurement'}),
+            'auto_reorder': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
+class AdvancedMedicineSearchForm(forms.Form):
+    query = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Search by name, brand, or generic name...'
+        })
+    )
+    category = forms.ModelChoiceField(
+        queryset=MedicineCategory.objects.filter(active=True),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Category'
+    )
+    prescription_required = forms.ChoiceField(
+        required=False,
+        choices=[('', 'Any'), ('yes', 'Prescription Required'), ('no', 'No Prescription')],
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Prescription'
+    )
+    condition = forms.ChoiceField(
+        required=False,
+        choices=[('', 'Any')] + list(Medicine.CONDITION_CHOICES),
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Condition'
+    )
+    expiring_soon = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        label='Expiring soon (within 30 days)'
+    )
+    rating_min = forms.FloatField(
+        required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '5', 'step': '0.5'}),
+        label='Minimum Rating'
+    )
+    latitude = forms.FloatField(
+        required=False,
+        widget=forms.HiddenInput(),
+        label='Your Latitude'
+    )
+    longitude = forms.FloatField(
+        required=False,
+        widget=forms.HiddenInput(),
+        label='Your Longitude'
+    )
+    radius = forms.IntegerField(
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}, choices=[
+            (10, 'Within 10 km'),
+            (25, 'Within 25 km'),
+            (50, 'Within 50 km'),
+            (100, 'Within 100 km'),
+        ]),
+        label='Search Radius',
+        initial=50
+    )

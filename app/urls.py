@@ -26,9 +26,28 @@ urlpatterns = [
     path('medicines-map/', views.medicines_map, name='medicines_map'),
     path('expiry-tracker/', views.expiry_tracker, name='expiry_tracker'),
     
+    # Medicine Categories
+    path('categories/', views.medicine_categories, name='medicine_categories'),
+    path('category/<int:category_id>/', views.category_medicines, name='category_medicines'),
+    
     # NGO Routes
     path('ngo/dashboard/', views.ngo_dashboard, name='ngo_dashboard'),
     path('medicine/<int:med_id>/request/', views.request_medicine, name='request_medicine'),
+    
+    # Emergency Alerts
+    path('emergency-alerts/', views.emergency_alerts, name='emergency_alerts'),
+    path('create-emergency-alert/', views.create_emergency_alert, name='create_emergency_alert'),
+    path('emergency-alert/<int:alert_id>/resolve/', views.resolve_emergency_alert, name='resolve_emergency_alert'),
+    
+    # Bulk Donation Requests
+    path('bulk-requests/', views.bulk_requests, name='bulk_requests'),
+    path('create-bulk-request/', views.create_bulk_request, name='create_bulk_request'),
+    path('bulk-request/<int:request_id>/edit/', views.edit_bulk_request, name='edit_bulk_request'),
+    path('bulk-request/<int:request_id>/matches/', views.bulk_request_matches, name='bulk_request_matches'),
+    
+    # NGO Inventory
+    path('inventory/', views.ngo_inventory, name='ngo_inventory'),
+    path('inventory/<int:inventory_id>/update/', views.update_inventory, name='update_inventory'),
     
     # Donation Request Routes
     path('request/<int:req_id>/', views.donation_request_detail, name='donation_request_detail'),
@@ -59,6 +78,14 @@ urlpatterns = [
     path('reports/', views.admin_reports, name='admin_reports'),
     path('reports-advanced/', views.admin_reports_advanced, name='admin_reports_advanced'),
     path('reports/export-csv/', views.export_reports_csv, name='export_reports_csv'),
+    
+    # Medicine Verification (Admin)
+    path('verifications/', views.medicine_verifications, name='medicine_verifications'),
+    path('verify-medicine/<int:verification_id>/', views.verify_medicine, name='verify_medicine'),
+    
+    # API Endpoints
+    path('api/medicine-search/', views.api_medicine_search, name='api_medicine_search'),
+    path('api/emergency-alerts/', views.api_emergency_alerts, name='api_emergency_alerts'),
     
     # Static Pages
     path('about/', views.about, name='about'),
