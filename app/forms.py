@@ -90,7 +90,7 @@ class UserSignupForm(forms.ModelForm):
         label='Confirm Password'
     )
     role = forms.ChoiceField(
-        choices=[('donor', 'Medicine Donor'), ('ngo', 'NGO/Hospital')],
+        choices=[('donor', 'Medicine Donor'), ('ngo', 'NGO/Hospital'), ('delivery_boy', 'Delivery Boy')],
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
     )
     organization_name = forms.CharField(
