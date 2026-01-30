@@ -4,18 +4,25 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db.models import Q, Avg, Count
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils import timezone
 from datetime import date, timedelta
 from math import radians, cos, sin, asin, sqrt
+import secrets
+from io import BytesIO
+import csv
 
 from .models import (
     Medicine, DonationRequest, UserProfile, MedicineRating, 
-    MedicineSearchLog, Notification
+    MedicineSearchLog, Notification, ContactMessage, Testimonial, FAQ, PasswordResetToken
 )
 from .forms import (
     MedicineForm, UserSignupForm, UserProfileForm, UserLoginForm,
-    DonationRequestForm, MedicineRatingForm, MedicineSearchForm
+    DonationRequestForm, MedicineRatingForm, MedicineSearchForm,
+    ContactMessageForm, ForgotPasswordForm, ResetPasswordForm, TestimonialForm
 )
 from .recommender import MedicineRecommender
 
@@ -597,3 +604,301 @@ def search_medicines(request):
         'form': form,
     }
     return render(request, 'search_medicines.html', context)
+
+
+# ============= NEW MISSING FEATURES =============
+
+def about(request):
+    """About page with mission, vision, and statistics"""
+    total_medicines_donated = Medicine.objects.filter(status='donated').count()
+    total_ngos = User.objects.filter(profile__role='ngo').count()
+    total_donors = User.objects.filter(profile__role='donor').count()
+    total_lives_helped = DonationRequest.objects.filter(status='completed').count()
+
+    context = {
+        'total_medicines_donated': total_medicines_donated,
+        'total_ngos': total_ngos,
+        'total_donors': total_donors,
+        'total_lives_helped': total_lives_helped,
+    }
+    return render(request, 'about.html', context)
+
+
+def contact(request):
+    """Contact page with contact form and auto-reply"""
+    if request.method == 'POST':
+        form = ContactMessageForm(request.POST)
+        if form.is_valid():
+            contact_msg = form.save()
+            
+            # Send auto-reply email
+            try:
+                send_mail(
+                    subject='We received your message',
+                    message=f'''Thank you for contacting MedShare!
+
+We have received your message: "{form.cleaned_data['subject']}"
+
+Our team will review your message and get back to you soon.
+
+Best regards,
+MedShare Team''',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[contact_msg.email],
+                    fail_silently=True,
+                )
+            except:
+                pass
+
+            messages.success(request, "Thank you! Your message has been sent. We'll get back to you soon.")
+            return redirect('home')
+    else:
+        form = ContactMessageForm()
+
+    context = {'form': form}
+    return render(request, 'contact.html', context)
+
+
+def faq(request):
+    """FAQ/Help page with categorized questions"""
+    faqs = FAQ.objects.filter(active=True).order_by('order')
+    categories = dict(FAQ._meta.get_field('category').choices)
+
+    # Group FAQs by category
+    faqs_by_category = {}
+    for faq in faqs:
+        if faq.category not in faqs_by_category:
+            faqs_by_category[faq.category] = []
+        faqs_by_category[faq.category].append(faq)
+
+    context = {
+        'faqs': faqs,
+        'faqs_by_category': faqs_by_category,
+        'categories': categories,
+    }
+    return render(request, 'faq.html', context)
+
+
+def forgot_password(request):
+    """Forgot password form"""
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    if request.method == 'POST':
+        form = ForgotPasswordForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            try:
+                user = User.objects.get(email=email)
+                
+                # Create reset token
+                token = secrets.token_urlsafe(32)
+                expires_at = timezone.now() + timedelta(hours=24)
+                PasswordResetToken.objects.create(
+                    user=user,
+                    token=token,
+                    expires_at=expires_at
+                )
+
+                # Send reset email
+                reset_link = f"{request.build_absolute_uri('/reset-password/')}{token}/"
+                send_mail(
+                    subject='MedShare Password Reset',
+                    message=f'''Click the link below to reset your password:
+
+{reset_link}
+
+This link expires in 24 hours.
+
+If you didn't request this, please ignore this email.
+
+Best regards,
+MedShare Team''',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+                messages.success(request, "Password reset link sent to your email!")
+            except User.DoesNotExist:
+                messages.error(request, "Email not found in our records.")
+    else:
+        form = ForgotPasswordForm()
+
+    return render(request, 'forgot_password.html', {'form': form})
+
+
+def reset_password(request, token):
+    """Reset password with token"""
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    try:
+        reset_token = PasswordResetToken.objects.get(token=token, used=False)
+        
+        # Check if token expired
+        if reset_token.expires_at < timezone.now():
+            messages.error(request, "This password reset link has expired.")
+            return redirect('forgot_password')
+
+        if request.method == 'POST':
+            form = ResetPasswordForm(request.POST)
+            if form.is_valid():
+                reset_token.user.set_password(form.cleaned_data['password'])
+                reset_token.user.save()
+                reset_token.used = True
+                reset_token.save()
+
+                messages.success(request, "Password reset successful! Please login with your new password.")
+                return redirect('login')
+        else:
+            form = ResetPasswordForm()
+
+        return render(request, 'reset_password.html', {'form': form, 'token': token})
+
+    except PasswordResetToken.DoesNotExist:
+        messages.error(request, "Invalid password reset link.")
+        return redirect('forgot_password')
+
+
+@login_required
+def expiry_tracker(request):
+    """Real-time expiry tracker showing all medicines with countdown"""
+    if request.user.profile.role == 'donor':
+        medicines = Medicine.objects.filter(donor=request.user, status='available')
+    else:
+        medicines = Medicine.objects.filter(status='available')
+
+    # Categorize medicines by expiry status
+    expiring_soon = []
+    expiring_very_soon = []
+    already_expired = []
+    normal = []
+
+    for medicine in medicines:
+        days_left = medicine.days_until_expiry()
+        medicine.days_left = days_left
+
+        if days_left < 0:
+            already_expired.append(medicine)
+        elif days_left <= 7:
+            expiring_very_soon.append(medicine)
+        elif days_left <= 30:
+            expiring_soon.append(medicine)
+        else:
+            normal.append(medicine)
+
+    context = {
+        'expiring_very_soon': expiring_very_soon,
+        'expiring_soon': expiring_soon,
+        'already_expired': already_expired,
+        'normal': normal,
+        'total_medicines': len(medicines),
+    }
+    return render(request, 'expiry_tracker.html', context)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def admin_reports_advanced(request):
+    """Advanced admin reports with charts and export options"""
+    # Get all data
+    total_medicines = Medicine.objects.count()
+    available = Medicine.objects.filter(status='available').count()
+    donated = Medicine.objects.filter(status='donated').count()
+    expired = Medicine.objects.filter(status='expired').count()
+
+    total_donors = User.objects.filter(profile__role='donor').count()
+    total_ngos = User.objects.filter(profile__role='ngo').count()
+
+    total_requests = DonationRequest.objects.count()
+    pending_requests = DonationRequest.objects.filter(status='pending').count()
+    completed_requests = DonationRequest.objects.filter(status='completed').count()
+
+    # Top medicines
+    top_medicines = Medicine.objects.annotate(
+        avg_rating=Avg('ratings__rating'),
+        ratings_count=Count('ratings')
+    ).order_by('-avg_rating')[:5]
+
+    # Donations per month (last 12 months)
+    from django.db.models.functions import TruncDate
+    donations_per_month = DonationRequest.objects.filter(
+        status='completed'
+    ).extra(
+        select={'month': 'strftime("%Y-%m", created_at)'}
+    ).values('month').annotate(count=Count('id')).order_by('month')
+
+    context = {
+        'total_medicines': total_medicines,
+        'available': available,
+        'donated': donated,
+        'expired': expired,
+        'total_donors': total_donors,
+        'total_ngos': total_ngos,
+        'total_requests': total_requests,
+        'pending_requests': pending_requests,
+        'completed_requests': completed_requests,
+        'top_medicines': top_medicines,
+        'donations_per_month': list(donations_per_month),
+    }
+    return render(request, 'admin_reports_advanced.html', context)
+
+
+@user_passes_test(lambda u: u.is_superuser)
+def export_reports_csv(request):
+    """Export admin reports as CSV"""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="medshare_reports.csv"'
+
+    writer = csv.writer(response)
+    
+    # Write summary statistics
+    writer.writerow(['MedShare Report', f'Generated on {date.today()}'])
+    writer.writerow([])
+    
+    writer.writerow(['SUMMARY STATISTICS'])
+    writer.writerow(['Total Medicines', Medicine.objects.count()])
+    writer.writerow(['Available Medicines', Medicine.objects.filter(status='available').count()])
+    writer.writerow(['Donated Medicines', Medicine.objects.filter(status='donated').count()])
+    writer.writerow(['Expired Medicines', Medicine.objects.filter(status='expired').count()])
+    writer.writerow(['Total Donors', User.objects.filter(profile__role='donor').count()])
+    writer.writerow(['Total NGOs', User.objects.filter(profile__role='ngo').count()])
+    writer.writerow([])
+    
+    # Write donation requests
+    writer.writerow(['DONATION REQUESTS'])
+    writer.writerow(['Medicine Name', 'Donor', 'NGO', 'Status', 'Date'])
+    for req in DonationRequest.objects.select_related('medicine', 'medicine__donor', 'ngo'):
+        writer.writerow([
+            req.medicine.name,
+            req.medicine.donor.username,
+            req.ngo.username,
+            req.status,
+            req.created_at.strftime('%Y-%m-%d')
+        ])
+
+    return response
+
+
+def add_testimonial(request):
+    """Add testimonial form"""
+    if request.method == 'POST':
+        form = TestimonialForm(request.POST, request.FILES)
+        if form.is_valid():
+            testimonial = form.save(commit=False)
+            if request.user.is_authenticated:
+                testimonial.user = request.user
+            testimonial.save()
+            messages.success(request, "Thank you! Your testimonial will be reviewed and published soon.")
+            return redirect('home')
+    else:
+        form = TestimonialForm()
+
+    return render(request, 'add_testimonial.html', {'form': form})
+
+
+def testimonials(request):
+    """View approved testimonials"""
+    testimonials_list = Testimonial.objects.filter(approved=True).order_by('-created_at')
+    context = {'testimonials': testimonials_list}
+    return render(request, 'testimonials.html', context)
+

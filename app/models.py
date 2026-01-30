@@ -137,3 +137,72 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.user.username}"
+
+
+class ContactMessage(models.Model):
+    """Contact form submissions"""
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    is_resolved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} - {self.subject}"
+
+
+class Testimonial(models.Model):
+    """User testimonials and success stories"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='testimonials', null=True, blank=True)
+    name = models.CharField(max_length=100)
+    role = models.CharField(max_length=50, choices=[('donor', 'Medicine Donor'), ('ngo', 'NGO/Hospital')])
+    message = models.TextField()
+    image = models.ImageField(upload_to='testimonials/', null=True, blank=True)
+    approved = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} - {self.role}"
+
+
+class FAQ(models.Model):
+    """Frequently Asked Questions"""
+    question = models.CharField(max_length=300)
+    answer = models.TextField()
+    category = models.CharField(max_length=50, choices=[
+        ('donation', 'How to Donate'),
+        ('request', 'How to Request'),
+        ('safety', 'Safety & Guidelines'),
+        ('technical', 'Technical Support'),
+        ('other', 'Other')
+    ])
+    order = models.IntegerField(default=0)
+    active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', '-created_at']
+        verbose_name_plural = "FAQs"
+
+    def __str__(self):
+        return self.question
+
+
+class PasswordResetToken(models.Model):
+    """Password reset tokens"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reset_tokens')
+    token = models.CharField(max_length=100, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Reset token for {self.user.username}"

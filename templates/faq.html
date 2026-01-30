@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}FAQ - MedShare{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-lg-12 text-center">
+            <h1 class="display-4 fw-bold mb-3">Frequently Asked Questions</h1>
+            <p class="lead text-muted">Find answers to common questions about MedShare</p>
+        </div>
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <ul class="nav nav-pills justify-content-center mb-4" id="faqTabs">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#all" data-bs-toggle="pill">All</a>
+                </li>
+                {% for category_key, category_name in categories.items %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="#{{ category_key }}" data-bs-toggle="pill">{{ category_name }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- FAQs -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="tab-content" id="faqContent">
+                <!-- All FAQs -->
+                <div class="tab-pane fade show active" id="all">
+                    {% for faq in faqs %}
+                        <div class="accordion accordion-flush" id="accordion{{ faq.id }}">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#collapse{{ faq.id }}">
+                                        <i class="fas fa-question-circle text-success me-2"></i>
+                                        {{ faq.question }}
+                                    </button>
+                                </h2>
+                                <div id="collapse{{ faq.id }}" class="accordion-collapse collapse" 
+                                     data-bs-parent="#accordion{{ faq.id }}">
+                                    <div class="accordion-body">
+                                        {{ faq.answer|safe }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-center text-muted">No FAQs available yet.</p>
+                    {% endfor %}
+                </div>
+
+                <!-- FAQs by Category -->
+                {% for category_key, category_faqs in faqs_by_category.items %}
+                    <div class="tab-pane fade" id="{{ category_key }}">
+                        {% for faq in category_faqs %}
+                            <div class="accordion accordion-flush" id="accordion{{ faq.id }}">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" 
+                                                data-bs-target="#collapse{{ faq.id }}">
+                                            <i class="fas fa-question-circle text-success me-2"></i>
+                                            {{ faq.question }}
+                                        </button>
+                                    </h2>
+                                    <div id="collapse{{ faq.id }}" class="accordion-collapse collapse" 
+                                         data-bs-parent="#accordion{{ faq.id }}">
+                                        <div class="accordion-body">
+                                            {{ faq.answer|safe }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Still Have Questions -->
+    <div class="row mt-5">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 bg-light p-5 text-center rounded">
+                <h4 class="mb-3">Still Have Questions?</h4>
+                <p class="text-muted mb-4">Can't find the answer you're looking for? Please get in touch with our team.</p>
+                <a href="{% url 'contact' %}" class="btn btn-success">
+                    <i class="fas fa-envelope"></i> Contact Us
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

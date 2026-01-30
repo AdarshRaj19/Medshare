@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Success Stories - MedShare{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-lg-12 text-center">
+            <h1 class="display-4 fw-bold mb-3">Success Stories</h1>
+            <p class="lead text-muted">Read inspiring stories from our community</p>
+            {% if not user.is_authenticated %}
+                <a href="{% url 'add_testimonial' %}" class="btn btn-success mt-3">
+                    <i class="fas fa-heart"></i> Share Your Story
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Testimonials Grid -->
+    <div class="row">
+        {% for testimonial in testimonials %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card border-0 shadow-sm h-100 hover-card">
+                    {% if testimonial.image %}
+                        <img src="{{ testimonial.image.url }}" class="card-img-top" alt="{{ testimonial.name }}" 
+                             style="height: 300px; object-fit: cover;">
+                    {% else %}
+                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
+                             style="height: 300px;">
+                            <i class="fas fa-user fa-5x text-muted"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">{{ testimonial.name }}</h5>
+                        <p class="text-success small">
+                            <i class="fas fa-tag"></i> {{ testimonial.get_role_display }}
+                        </p>
+                        <p class="card-text text-muted">
+                            "{{ testimonial.message|truncatewords:30 }}"
+                        </p>
+                    </div>
+
+                    <div class="card-footer bg-white border-0">
+                        <a href="#testimonialModal{{ testimonial.id }}" class="btn btn-sm btn-outline-success w-100" 
+                           data-bs-toggle="modal" data-bs-target="#testimonialModal{{ testimonial.id }}">
+                            Read Full Story
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Modal -->
+                <div class="modal fade" id="testimonialModal{{ testimonial.id }}" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header border-0">
+                                <h5 class="modal-title">{{ testimonial.name }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                {% if testimonial.image %}
+                                    <img src="{{ testimonial.image.url }}" class="img-fluid mb-3 rounded" 
+                                         alt="{{ testimonial.name }}">
+                                {% endif %}
+                                <p class="text-success mb-3">
+                                    <i class="fas fa-tag"></i> {{ testimonial.get_role_display }}
+                                </p>
+                                <p>{{ testimonial.message }}</p>
+                                <p class="text-muted small">
+                                    Shared on {{ testimonial.created_at|date:"M d, Y" }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-center py-5">
+                <i class="fas fa-heart text-muted" style="font-size: 4rem;"></i>
+                <h4 class="mt-3 text-muted">No testimonials yet</h4>
+                <p class="text-muted">Be the first to share your MedShare story!</p>
+                <a href="{% url 'add_testimonial' %}" class="btn btn-success mt-3">
+                    <i class="fas fa-heart"></i> Share Your Story
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Call to Action -->
+    <div class="row mt-5">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 bg-light p-5 text-center rounded">
+                <h3 class="mb-3">Have a Story to Share?</h3>
+                <p class="text-muted mb-4">We'd love to hear about your experience with MedShare!</p>
+                <a href="{% url 'add_testimonial' %}" class="btn btn-success btn-lg">
+                    <i class="fas fa-heart"></i> Add Your Testimonial
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .hover-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15) !important;
+    }
+</style>
+{% endblock %}

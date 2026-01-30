@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Medicine, DonationRequest, UserProfile, MedicineRating, MedicineSearchLog, Notification
+from .models import (
+    Medicine, DonationRequest, UserProfile, MedicineRating, MedicineSearchLog, 
+    Notification, ContactMessage, Testimonial, FAQ, PasswordResetToken
+)
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
@@ -75,3 +78,37 @@ class NotificationAdmin(admin.ModelAdmin):
     list_filter = ('is_read', 'created_at')
     search_fields = ('title', 'message', 'user__username')
     readonly_fields = ('created_at',)
+@admin.register(ContactMessage)
+class ContactMessageAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'subject', 'is_resolved', 'created_at')
+    list_filter = ('is_resolved', 'created_at')
+    search_fields = ('name', 'email', 'subject', 'message')
+    readonly_fields = ('created_at', 'updated_at')
+
+@admin.register(Testimonial)
+class TestimonialAdmin(admin.ModelAdmin):
+    list_display = ('name', 'role', 'approved', 'created_at')
+    list_filter = ('role', 'approved', 'created_at')
+    search_fields = ('name', 'message', 'user__username')
+    readonly_fields = ('created_at',)
+    actions = ['approve_testimonials']
+
+    def approve_testimonials(self, request, queryset):
+        queryset.update(approved=True)
+        self.message_user(request, f"{queryset.count()} testimonials approved.")
+    approve_testimonials.short_description = "Approve selected testimonials"
+
+@admin.register(FAQ)
+class FAQAdmin(admin.ModelAdmin):
+    list_display = ('question', 'category', 'order', 'active')
+    list_filter = ('category', 'active')
+    search_fields = ('question', 'answer')
+    list_editable = ('order', 'active')
+    ordering = ('order',)
+
+@admin.register(PasswordResetToken)
+class PasswordResetTokenAdmin(admin.ModelAdmin):
+    list_display = ('user', 'created_at', 'expires_at', 'used')
+    list_filter = ('used', 'created_at')
+    search_fields = ('user__username', 'user__email')
+    readonly_fields = ('token', 'created_at')

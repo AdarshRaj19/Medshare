@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Contact Us - MedShare{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-6">
+            <h1 class="display-5 fw-bold mb-3">Get in Touch</h1>
+            <p class="lead text-muted mb-4">
+                Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
+            </p>
+
+            <form method="POST" class="contact-form">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="{{ form.name.id_for_label }}" class="form-label">Your Name</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.email.id_for_label }}" class="form-label">Email Address</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}
+                        <div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.subject.id_for_label }}" class="form-label">Subject</label>
+                    {{ form.subject }}
+                    {% if form.subject.errors %}
+                        <div class="invalid-feedback d-block">{{ form.subject.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.message.id_for_label }}" class="form-label">Message</label>
+                    {{ form.message }}
+                    {% if form.message.errors %}
+                        <div class="invalid-feedback d-block">{{ form.message.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-success btn-lg w-100">
+                    <i class="fas fa-paper-plane"></i> Send Message
+                </button>
+            </form>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-success mb-3">
+                        <i class="fas fa-envelope"></i> Email
+                    </h5>
+                    <p class="card-text">
+                        <a href="mailto:info@medshare.com">info@medshare.com</a><br>
+                        <a href="mailto:support@medshare.com">support@medshare.com</a>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-success mb-3">
+                        <i class="fas fa-phone"></i> Phone
+                    </h5>
+                    <p class="card-text">
+                        <a href="tel:+18008463472">+1-800-MED-SHARE</a><br>
+                        <span class="text-muted">Monday - Friday, 9 AM - 6 PM IST</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-success mb-3">
+                        <i class="fas fa-map-marker-alt"></i> Location
+                    </h5>
+                    <p class="card-text">
+                        MedShare Foundation<br>
+                        New Delhi, India
+                    </p>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-success mb-3">
+                        <i class="fas fa-clock"></i> Response Time
+                    </h5>
+                    <p class="card-text">
+                        We typically respond to all inquiries within 24 hours during business days.
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h5 class="mb-3">Follow Us</h5>
+                <a href="#" class="btn btn-outline-success btn-sm me-2">
+                    <i class="fab fa-facebook"></i> Facebook
+                </a>
+                <a href="#" class="btn btn-outline-success btn-sm me-2">
+                    <i class="fab fa-twitter"></i> Twitter
+                </a>
+                <a href="#" class="btn btn-outline-success btn-sm">
+                    <i class="fab fa-instagram"></i> Instagram
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
