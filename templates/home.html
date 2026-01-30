@@ -6,7 +6,7 @@
 {% block content %}
 
 <!-- IMAGE CAROUSEL/SLIDER -->
-<<<<<<< HEAD
+
 <!-- HERO LANDING (modern split layout) -->
 <section class="hero-landing">
     <div class="container hero-grid">
@@ -32,15 +32,15 @@
 
             <div class="impact-row">
                 <div class="impact-item">
-                    <strong class="count" data-target="{{ total_medicines|default:'10000' }}">0</strong>
+                    <strong class="count" data-target="{{ total_medicines }}">{{ total_medicines }}</strong>
                     <span>Medicines Donated</span>
                 </div>
                 <div class="impact-item">
-                    <strong class="count" data-target="{{ total_ngos|default:'150' }}">0</strong>
+                    <strong class="count" data-target="{{ total_ngos }}">{{ total_ngos }}</strong>
                     <span>NGOs Registered</span>
                 </div>
                 <div class="impact-item">
-                    <strong class="count" data-target="{{ total_people_helped|default:'25000' }}">0</strong>
+                    <strong class="count" data-target="{{ total_people_helped }}">{{ total_people_helped }}</strong>
                     <span>People Helped</span>
                 </div>
             </div>
@@ -57,82 +57,6 @@
                 </div>
             </div>
         </div>
-=======
-<div class="hero-carousel">
-    <div class="carousel-container">
-        <div class="carousel-slide active" style="background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(59,130,246,0.1) 100%), url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1200 400%22><rect fill=%22%2310b981%22 width=%221200%22 height=%22400%22/><path fill=%22%2310b981%22 d=%22M0 200 Q300 100 600 200 T1200 200 L1200 400 L0 400 Z%22 opacity=%220.3%22/></svg>') center/cover;">
-            <div class="carousel-content">
-                <h1 class="carousel-title">Welcome to <span>MedShare</span></h1>
-                <p class="carousel-subtitle">Connecting Medicine Donors with Those in Need</p>
-            </div>
-        </div>
-
-        <div class="carousel-slide" style="background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(243,156,18,0.1) 100%), url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1200 400%22><rect fill=%223b82f6%22 width=%221200%22 height=%22400%22/><circle cx=%22300%22 cy=%22200%22 r=%22150%22 fill=%223b82f6%22 opacity=%220.3%22/></svg>') center/cover;">
-            <div class="carousel-content">
-                <h1 class="carousel-title">Save Medicines, Save Lives</h1>
-                <p class="carousel-subtitle">Donate unused medicines before they expire</p>
-            </div>
-        </div>
-
-        <div class="carousel-slide" style="background: linear-gradient(135deg, rgba(243,156,18,0.1) 0%, rgba(16,185,129,0.1) 100%), url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1200 400%22><rect fill=%22f39c12%22 width=%221200%22 height=%22400%22/><path fill=%22f39c12%22 d=%22M0 0 L600 200 L1200 0 L1200 400 L0 400 Z%22 opacity=%220.3%22/></svg>') center/cover;">
-            <div class="carousel-content">
-                <h1 class="carousel-title">Find Medicines Near You</h1>
-                <p class="carousel-subtitle">AI-powered search for available donations</p>
-            </div>
-        </div>
-
-        <!-- Carousel Controls -->
-        <button class="carousel-btn carousel-prev" onclick="prevSlide()">
-            <i class="fas fa-chevron-left"></i>
-        </button>
-        <button class="carousel-btn carousel-next" onclick="nextSlide()">
-            <i class="fas fa-chevron-right"></i>
-        </button>
-
-        <!-- Carousel Dots -->
-        <div class="carousel-dots">
-            <span class="dot active" onclick="currentSlide(0)"></span>
-            <span class="dot" onclick="currentSlide(1)"></span>
-            <span class="dot" onclick="currentSlide(2)"></span>
-        </div>
-    </div>
-</div>
-
-<!-- HERO TEXT SECTION -->
-<section class="hero-content">
-    <div class="hero-text">
-        <p class="hero-description">
-            A smart AI-powered platform connecting medicine donors with NGOs and hospitals.
-            Donate unused medicines before they expire and help those in need.
-        </p>
-    </div>
-
-    <div class="hero-buttons">
-        {% if not user.is_authenticated %}
-            <a href="{% url 'signup' %}" class="btn-primary">
-                <i class="fas fa-heart"></i> Become a Donor
-            </a>
-            <a href="{% url 'signup' %}" class="btn-secondary">
-                <i class="fas fa-hospital"></i> Find Medicines
-            </a>
-        {% else %}
-            {% if user.profile.role == "donor" %}
-                <a href="{% url 'add_medicine' %}" class="btn-primary">
-                    <i class="fas fa-plus"></i> Donate Medicine
-                </a>
-                <a href="{% url 'donor_dashboard' %}" class="btn-secondary">
-                    <i class="fas fa-chart-bar"></i> My Donations
-                </a>
-            {% else %}
-                <a href="{% url 'ngo_dashboard' %}" class="btn-primary">
-                    <i class="fas fa-search"></i> Find Medicines
-                </a>
-                <a href="{% url 'medicines_map' %}" class="btn-secondary">
-                    <i class="fas fa-map"></i> View Map
-                </a>
-            {% endif %}
-        {% endif %}
->>>>>>> f8463fe1c246733a0ebe1b3f86860983903bcafd
     </div>
 </section>
 
