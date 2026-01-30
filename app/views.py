@@ -80,12 +80,16 @@ def signup(request):
             user.set_password(form.cleaned_data['password'])
             user.save()
 
-            # Create user profile
-            UserProfile.objects.create(
+            # Create or update user profile. A post_save signal may already
+            # have created the profile when the user was saved, so use
+            # update_or_create to avoid UNIQUE constraint failures.
+            UserProfile.objects.update_or_create(
                 user=user,
-                role=form.cleaned_data['role'],
-                phone=form.cleaned_data.get('phone'),
-                organization_name=form.cleaned_data.get('organization_name'),
+                defaults={
+                    'role': form.cleaned_data['role'],
+                    'phone': form.cleaned_data.get('phone'),
+                    'organization_name': form.cleaned_data.get('organization_name'),
+                }
             )
 
             # Log the user in
