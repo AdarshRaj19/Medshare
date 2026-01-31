@@ -40,4 +40,10 @@ Admin: admin / admin123
 pip install -r requirements.txt
 python manage.py makemigrations
 python manage.py migrate
-python manage.py runsever
+python manage.py runserver
+
+
+Test Accounts:
+Admin: username=admin, password=admin123
+Donor: username=john_smith, password=password123
+NGO: username=red_cross, password=password123

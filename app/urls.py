@@ -86,6 +86,7 @@ urlpatterns = [
     # API Endpoints
     path('api/medicine-search/', views.api_medicine_search, name='api_medicine_search'),
     path('api/emergency-alerts/', views.api_emergency_alerts, name='api_emergency_alerts'),
+    path('api/subcategories/', views.api_subcategories, name='api_subcategories'),
     
     # Static Pages
     path('about/', views.about, name='about'),

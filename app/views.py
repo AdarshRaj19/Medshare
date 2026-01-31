@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.db.models import Q, Avg, Count
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
@@ -258,16 +259,31 @@ def delete_medicine(request, med_id):
 
 
 @login_required
+@csrf_exempt
 def add_medicine(request):
     """Add new medicine donation"""
+    try:
+        profile = request.user.profile
+        if profile.role != 'donor':
+            messages.error(request, "Only donors can add medicines.")
+            return redirect('home')
+    except:
+        messages.error(request, "Profile not found. Please contact admin.")
+        return redirect('home')
+    
     if request.method == 'POST':
         form = MedicineForm(request.POST, request.FILES)
         if form.is_valid():
-            med = form.save(commit=False)
-            med.donor = request.user
-            med.save()
-            messages.success(request, "Medicine listed for donation.")
-            return redirect('donor_dashboard')
+            try:
+                med = form.save(commit=False)
+                med.donor = request.user
+                med.save()
+                messages.success(request, "Medicine listed for donation.")
+                return redirect('donor_dashboard')
+            except Exception as e:
+                messages.error(request, f"Error saving medicine: {str(e)}")
+        else:
+            messages.error(request, "Please correct the errors below.")
     else:
         form = MedicineForm()
 
@@ -1952,4 +1968,15 @@ def api_emergency_alerts(request):
         })
     
     return Response(data)
+
+
+def api_subcategories(request):
+    """API endpoint for subcategories by category"""
+    category_id = request.GET.get('category')
+    if category_id:
+        subcategories = MedicineSubcategory.objects.filter(category_id=category_id, active=True)
+        data = [{'id': sub.id, 'name': sub.name} for sub in subcategories]
+    else:
+        data = []
+    return JsonResponse(data, safe=False)
 

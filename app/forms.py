@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
+from datetime import date
 from .models import (
     Medicine, UserProfile, DonationRequest, MedicineRating,
     ContactMessage, Testimonial, MedicineCategory, MedicineSubcategory,
@@ -52,8 +53,8 @@ class MedicineForm(forms.ModelForm):
             'quantity': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Quantity'}),
             'unit': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., tablets, bottles, vials'}),
             'condition': forms.Select(attrs={'class': 'form-control'}),
-            'expiry_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'manufacture_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'expiry_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'min': date.today().isoformat()}),
+            'manufacture_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'max': date.today().isoformat()}),
             'batch_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Batch/Lot Number'}),
             'manufacturer': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Manufacturer Name'}),
             'storage_condition': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Room temperature, Refrigerate'}),
@@ -78,6 +79,20 @@ class MedicineForm(forms.ModelForm):
             )
         else:
             self.fields['subcategory'].queryset = MedicineSubcategory.objects.none()
+
+    def clean_expiry_date(self):
+        expiry_date = self.cleaned_data.get('expiry_date')
+        if expiry_date and expiry_date < date.today():
+            raise forms.ValidationError("Expiry date must be today or in the future.")
+        return expiry_date
+
+    def clean(self):
+        cleaned_data = super().clean()
+        category = cleaned_data.get('category')
+        subcategory = cleaned_data.get('subcategory')
+        if subcategory and category and subcategory.category != category:
+            raise forms.ValidationError("Selected subcategory does not belong to the selected category.")
+        return cleaned_data
 
 
 class UserSignupForm(forms.ModelForm):
