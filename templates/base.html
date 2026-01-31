@@ -143,7 +143,7 @@
 
 <!-- PAGE CONTENT -->
 <main class="main-container">
-    {% if messages %}
+    {% if messages and not suppress_flash_messages %}
         {% for message in messages %}
             <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %}">
                 <i class="fas fa-info-circle"></i>

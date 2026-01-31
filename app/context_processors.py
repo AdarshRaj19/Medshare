@@ -21,9 +21,19 @@ def global_ui_state(request):
             is_read=False
         ).exclude(sender=request.user).count()
 
+    # Suppress flash messages on messaging pages to avoid duplicating chat content
+    suppress_flash_messages = False
+    try:
+        path = request.path or ''
+        if path.startswith('/messages/') or path.startswith('/messages'):
+            suppress_flash_messages = True
+    except Exception:
+        suppress_flash_messages = False
+
     return {
         "unread_notifications_count": unread_notifications_count,
         "unread_messages_count": unread_messages_count,
+        "suppress_flash_messages": suppress_flash_messages,
     }
 
 
