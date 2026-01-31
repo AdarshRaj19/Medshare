@@ -56,28 +56,12 @@
             <div style="background: linear-gradient(135deg, rgba(231,124,60,0.1) 0%, rgba(231,124,60,0.05) 100%); padding: 20px; border-radius: 8px; border-left: 4px solid #e74c3c;">
                 <h4 style="color: #e74c3c; margin-bottom: 15px;"><i class="fas fa-heart"></i> Donor</h4>
                 <p style="color: var(--dark); font-weight: bold; margin-bottom: 5px;">{{ medicine.donor.get_full_name|default:medicine.donor.username }}</p>
-                <p style="color: #666; font-size: 14px; margin: 0;">
-                    <i class="fas fa-envelope"></i> {{ medicine.donor.email }}
-                </p>
-                {% if medicine.donor.profile.phone %}
-                <p style="color: #666; font-size: 14px; margin: 0;">
-                    <i class="fas fa-phone"></i> {{ medicine.donor.profile.phone }}
-                </p>
-                {% endif %}
             </div>
 
             <!-- NGO -->
             <div style="background: linear-gradient(135deg, rgba(52,152,219,0.1) 0%, rgba(52,152,219,0.05) 100%); padding: 20px; border-radius: 8px; border-left: 4px solid #3498db;">
                 <h4 style="color: #3498db; margin-bottom: 15px;"><i class="fas fa-hospital"></i> Requesting Organization</h4>
                 <p style="color: var(--dark); font-weight: bold; margin-bottom: 5px;">{{ donation_request.ngo.get_full_name|default:donation_request.ngo.username }}</p>
-                <p style="color: #666; font-size: 14px; margin: 0;">
-                    <i class="fas fa-envelope"></i> {{ donation_request.ngo.email }}
-                </p>
-                {% if donation_request.ngo.profile.phone %}
-                <p style="color: #666; font-size: 14px; margin: 0;">
-                    <i class="fas fa-phone"></i> {{ donation_request.ngo.profile.phone }}
-                </p>
-                {% endif %}
             </div>
         </div>
 
