@@ -8,11 +8,11 @@
 {% endblock %}
 
 {% block content %}
-<div style="max-width: 700px; margin: 40px auto;">
+<div style="max-width: 780px; margin: 24px auto;">
     <div class="card app-card">
         <div class="card-header">
             <h2 class="card-title"><i class="fas fa-pills"></i> Donate a Medicine</h2>
-            <p style="color: #666; margin-top: 10px; font-size: 14px;">Fill in the details about the medicine you want to donate</p>
+            <p style="color: #666; margin-top: 6px; font-size: 14px;">Only the basic details are required — advanced details are optional.</p>
         </div>
 
         {% if form.non_field_errors %}
@@ -25,8 +25,9 @@
 
         <form method="POST" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- BASIC DETAILS -->
+            <h5 style="margin-top: 6px;">--- Basic Details ---</h5>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                 <div class="form-group">
                     <label class="form-label" for="id_name"><i class="fas fa-capsules"></i> Medicine Name *</label>
                     {{ form.name }}
@@ -44,34 +45,10 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top:10px;">
                 <div class="form-group">
-                    <label class="form-label" for="id_brand_name"><i class="fas fa-tag"></i> Brand Name</label>
-                    {{ form.brand_name }}
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="id_generic_name"><i class="fas fa-pills"></i> Generic Name</label>
-                    {{ form.generic_name }}
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="form-group">
-                    <label class="form-label" for="id_category"><i class="fas fa-list"></i> Medicine Category</label>
+                    <label class="form-label" for="id_category"><i class="fas fa-list"></i> Category</label>
                     {{ form.category }}
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="id_subcategory"><i class="fas fa-sitemap"></i> Subcategory</label>
-                    {{ form.subcategory }}
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="form-group">
-                    <label class="form-label" for="id_unit"><i class="fas fa-cubes"></i> Unit</label>
-                    {{ form.unit }}
                 </div>
 
                 <div class="form-group">
@@ -80,72 +57,83 @@
                 </div>
             </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="id_expiry_date"><i class="fas fa-calendar-times"></i> Expiry Date *</label>
-                    {{ form.expiry_date }}
-                    {% if form.expiry_date.errors %}
-                        <div style="color: #e74c3c; font-size: 12px;">{% for error in form.expiry_date.errors %}{{ error }}{% endfor %}</div>
-                    {% endif %}
-                </div>
+            <div class="form-group" style="margin-top:8px;">
+                <label class="form-label" for="id_expiry_date"><i class="fas fa-calendar-times"></i> Expiry Date *</label>
+                {{ form.expiry_date }}
+                {% if form.expiry_date.errors %}
+                    <div style="color: #e74c3c; font-size: 12px;">{% for error in form.expiry_date.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="form-group">
-                    <label class="form-label" for="id_manufacture_date"><i class="fas fa-calendar"></i> Manufacture Date</label>
-                    {{ form.manufacture_date }}
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="id_batch_number"><i class="fas fa-barcode"></i> Batch Number</label>
-                    {{ form.batch_number }}
-                </div>
-            </div>
-
+            <!-- PICKUP ADDRESS -->
+            <h5 style="margin-top: 18px;">--- Pickup Address ---</h5>
             <div class="form-group">
-                <label class="form-label" for="id_description"><i class="fas fa-align-left"></i> Description</label>
-                {{ form.description }}
-                <small style="color: #999;">Add details about the medicine condition, type, etc.</small>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="id_storage_condition"><i class="fas fa-thermometer-half"></i> Storage Condition</label>
-                {{ form.storage_condition }}
-                <small style="color: #999;">e.g., Room temperature, Refrigerated, Keep in cool place</small>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="form-group">
-                    <label class="form-label" for="id_latitude"><i class="fas fa-map-marker-alt"></i> Your Latitude</label>
-                    {{ form.latitude }}
-                    <small style="color: #999;">For location-based search</small>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="id_longitude"><i class="fas fa-map-marker-alt"></i> Your Longitude</label>
-                    {{ form.longitude }}
-                    <small style="color: #999;">For location-based search</small>
-                </div>
-            </div>
-
-            <div class="form-group" style="margin-top: 10px;">
-                <label class="form-label"><i class="fas fa-map"></i> Choose Location on Map</label>
-                <div id="picker-map" style="height: 300px; border-radius: 12px;"></div>
-                <small style="color: #999;">Click the map to set the marker; it will fill Latitude/Longitude.</small>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="id_location_name"><i class="fas fa-building"></i> Location Name</label>
+                <label class="form-label" for="id_location_name"><i class="fas fa-map-marker-alt"></i> Address / City / Pincode</label>
                 {{ form.location_name }}
-                <small style="color: #999;">e.g., Your address or clinic name</small>
+                <small style="color: #999; display:block;">Provide address and city/pincode (e.g., "123 Main St, Mumbai - 400001").</small>
             </div>
 
-            <div class="form-group">
-                <label class="form-label" for="id_image"><i class="fas fa-image"></i> Medicine Image</label>
-                {{ form.image }}
-                <small style="color: #999;">Upload an image of the medicine package</small>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="form-group">
+                    <label class="form-label" for="id_latitude"><i class="fas fa-map"></i> Latitude</label>
+                    {{ form.latitude }}
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="id_longitude"><i class="fas fa-map"></i> Longitude</label>
+                    {{ form.longitude }}
+                </div>
             </div>
 
-            <div style="background: rgba(59,130,246,0.08); padding: 20px; border-radius: 12px; border-left: 4px solid #3b82f6; margin: 20px 0;">
+            <div class="form-group" style="margin-top:10px;">
+                <label class="form-label"><i class="fas fa-map"></i> Map (click to set location)</label>
+                <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
+                    <button type="button" id="use-location" class="btn-secondary" style="padding:6px 10px; font-size:13px;">Use my current location</button>
+                    <small style="color:#666;">Or click on the map to set location</small>
+                </div>
+                <div id="picker-map" style="height: 300px; border-radius: 12px;"></div>
+                <small style="color: #999; display:block; margin-top:6px;">Latitude and Longitude will be filled automatically when you use the button or click the map.</small>
+            </div>
+
+            <!-- ADVANCED DETAILS COLLAPSIBLE -->
+            <div style="margin-top: 18px;">
+                <button type="button" id="toggle-advanced" class="btn-secondary" style="padding:8px 12px; font-size:14px;">
+                    + Advanced Details (Optional)
+                </button>
+
+                <div id="advanced-section" style="display:none; margin-top:12px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                        <div class="form-group">
+                            <label class="form-label" for="id_brand_name"><i class="fas fa-tag"></i> Brand Name</label>
+                            {{ form.brand_name }}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="id_generic_name"><i class="fas fa-pills"></i> Generic Name</label>
+                            {{ form.generic_name }}
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top:8px;">
+                        <div class="form-group">
+                            <label class="form-label" for="id_manufacture_date"><i class="fas fa-calendar"></i> Manufacture Date</label>
+                            {{ form.manufacture_date }}
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="id_batch_number"><i class="fas fa-barcode"></i> Batch Number</label>
+                            {{ form.batch_number }}
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top:10px;">
+                        <label class="form-label" for="id_image"><i class="fas fa-image"></i> Upload Image (optional)</label>
+                        {{ form.image }}
+                        <small style="color: #999; display:block;">A clear photo of the medicine package helps verification.</small>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background: rgba(59,130,246,0.06); padding: 16px; border-radius: 12px; border-left: 4px solid #3b82f6; margin: 18px 0;">
                 <p style="color: #0c5460; margin: 0;">
                     <i class="fas fa-info-circle"></i> 
                     <strong>Note:</strong> Ensure you provide accurate information. Donations are verified before being listed.
@@ -164,12 +152,28 @@
 </div>
 
 <script>
-    // Auto-fill latitude and longitude from browser geolocation
+    // Auto-fill latitude and longitude from browser geolocation (request early on page load)
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            document.getElementById('id_latitude').value = position.coords.latitude;
-            document.getElementById('id_longitude').value = position.coords.longitude;
-        });
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                // Success: browser allowed location access
+                document.getElementById('id_latitude').value = position.coords.latitude.toFixed(6);
+                document.getElementById('id_longitude').value = position.coords.longitude.toFixed(6);
+                // Trigger map update if it's ready
+                if (window.setLocationFromCoords) {
+                    window.setLocationFromCoords(position.coords.latitude, position.coords.longitude);
+                }
+            },
+            function(error) {
+                // Error: user denied or geolocation unavailable - will fallback to IP-based in map init
+                console.log('Geolocation denied or unavailable, will use IP-based fallback.');
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            }
+        );
     }
 
     // Update subcategory options when category changes
@@ -196,6 +200,51 @@
         }
     });
 </script>
+<script>
+    // Toggle Advanced Details
+    (function(){
+        const btn = document.getElementById('toggle-advanced');
+        const adv = document.getElementById('advanced-section');
+        if (!btn || !adv) return;
+        btn.addEventListener('click', function(){
+            if (adv.style.display === 'none' || adv.style.display === '') {
+                adv.style.display = 'block';
+                btn.textContent = '- Advanced Details (Optional)';
+            } else {
+                adv.style.display = 'none';
+                btn.textContent = '+ Advanced Details (Optional)';
+            }
+        });
+    })();
+</script>
+<script>
+    // Wire the "Use my current location" button to the browser geolocation
+    (function(){
+        const useBtn = document.getElementById('use-location');
+        if (!useBtn) return;
+        useBtn.addEventListener('click', function(){
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser.');
+                return;
+            }
+            navigator.geolocation.getCurrentPosition(function(pos){
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                if (window.setLocationFromCoords) {
+                    window.setLocationFromCoords(lat, lng);
+                } else {
+                    // fallback: set inputs directly
+                    const latInput = document.getElementById('id_latitude');
+                    const lngInput = document.getElementById('id_longitude');
+                    if (latInput) latInput.value = lat.toFixed(6);
+                    if (lngInput) lngInput.value = lng.toFixed(6);
+                }
+            }, function(err){
+                alert('Unable to retrieve your location. Please allow location access or click on the map.');
+            }, {enableHighAccuracy:true});
+        });
+    })();
+</script>
 {% endblock %}
 
 {% block extra_js %}
@@ -207,6 +256,10 @@
 
         const latInput = document.getElementById('id_latitude');
         const lngInput = document.getElementById('id_longitude');
+
+        // Make lat/lon readonly to encourage using the map/button for accurate coords
+        if (latInput) latInput.setAttribute('readonly', 'readonly');
+        if (lngInput) lngInput.setAttribute('readonly', 'readonly');
 
         const initialLat = parseFloat(latInput.value) || 20;
         const initialLng = parseFloat(lngInput.value) || 0;
@@ -227,6 +280,16 @@
             else marker = L.marker([lat, lng]).addTo(map);
         }
 
+        // expose a helper to set location from other scripts/buttons
+        window.setLocationFromCoords = function(lat, lng){
+            try{
+                setMarker(lat, lng);
+                map.setView([lat, lng], 12);
+            }catch(e){
+                // ignore if map not ready
+            }
+        }
+
         // If inputs already have values, show marker
         if (latInput.value && lngInput.value) {
             setMarker(parseFloat(latInput.value), parseFloat(lngInput.value));
@@ -236,14 +299,38 @@
             setMarker(e.latlng.lat, e.latlng.lng);
         });
 
-        // When browser geolocation fills the inputs, reflect it on the map
+        // Try browser geolocation first; if unavailable or denied, fall back to IP-based geolocation
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function (position) {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
                 setMarker(lat, lng);
                 map.setView([lat, lng], 12);
-            });
+            }, function (err) {
+                // geolocation failed or denied -> try IP-based geolocation (approximate)
+                fetch('https://ipapi.co/json/')
+                    .then(resp => resp.json())
+                    .then(data => {
+                        if (data && data.latitude && data.longitude) {
+                            setMarker(parseFloat(data.latitude), parseFloat(data.longitude));
+                            map.setView([parseFloat(data.latitude), parseFloat(data.longitude)], 8);
+                        }
+                    })
+                    .catch(() => {
+                        // ignore fallback failure
+                    });
+            }, {enableHighAccuracy: true, timeout: 7000});
+        } else {
+            // No navigator.geolocation available - try IP-based geolocation
+            fetch('https://ipapi.co/json/')
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data && data.latitude && data.longitude) {
+                        setMarker(parseFloat(data.latitude), parseFloat(data.longitude));
+                        map.setView([parseFloat(data.latitude), parseFloat(data.longitude)], 8);
+                    }
+                })
+                .catch(() => {});
         }
     })();
 </script>

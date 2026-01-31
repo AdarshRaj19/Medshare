@@ -27,44 +27,21 @@ class MedicineForm(forms.ModelForm):
     class Meta:
         model = Medicine
         fields = [
-            'name', 'brand_name', 'generic_name', 'category', 'subcategory',
-            'description', 'dosage_form', 'strength', 'composition', 'quantity', 'unit',
-            'condition', 'expiry_date', 'manufacture_date', 'batch_number', 'manufacturer',
-            'storage_condition', 'usage_instructions', 'side_effects', 'contraindications',
-            'prescription_required', 'pickup_available', 'delivery_available',
-            'latitude', 'longitude', 'location_name', 'image'
+            'name', 'quantity', 'category',
+            'condition', 'expiry_date', 
+            'location_name', 'latitude', 'longitude',
+            'brand_name', 'generic_name', 'manufacture_date', 'batch_number', 'image'
         ]
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Medicine Name'}),
-            'brand_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Brand Name (e.g., Tylenol)'}),
-            'generic_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Generic Name (e.g., Paracetamol)'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Detailed Description'}),
-            'dosage_form': forms.Select(attrs={'class': 'form-control'}, choices=[
-                ('', 'Select Dosage Form'),
-                ('Tablet', 'Tablet'),
-                ('Capsule', 'Capsule'),
-                ('Syrup', 'Syrup'),
-                ('Injection', 'Injection'),
-                ('Cream', 'Cream/Ointment'),
-                ('Drops', 'Drops'),
-                ('Other', 'Other'),
-            ]),
-            'strength': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., 500mg, 10ml'}),
-            'composition': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Active ingredients'}),
             'quantity': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Quantity'}),
-            'unit': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., tablets, bottles, vials'}),
+            'category': forms.Select(attrs={'class': 'form-control'}),
             'condition': forms.Select(attrs={'class': 'form-control'}),
             'expiry_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'min': date.today().isoformat()}),
+            'brand_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Brand Name (e.g., Tylenol)'}),
+            'generic_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Generic Name (e.g., Paracetamol)'}),
             'manufacture_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date', 'max': date.today().isoformat()}),
             'batch_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Batch/Lot Number'}),
-            'manufacturer': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Manufacturer Name'}),
-            'storage_condition': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Room temperature, Refrigerate'}),
-            'usage_instructions': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'How to use'}),
-            'side_effects': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Common side effects'}),
-            'contraindications': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'When not to use'}),
-            'prescription_required': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'pickup_available': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'delivery_available': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'latitude': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Latitude', 'step': '0.0001'}),
             'longitude': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Longitude', 'step': '0.0001'}),
             'location_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Location Name'}),
@@ -80,6 +57,12 @@ class MedicineForm(forms.ModelForm):
             )
         else:
             self.fields['subcategory'].queryset = MedicineSubcategory.objects.none()
+
+        # Make the less-important "advanced" fields optional in the form
+        optional_fields = ['brand_name', 'manufacture_date', 'batch_number', 'image']
+        for fname in optional_fields:
+            if fname in self.fields:
+                self.fields[fname].required = False
 
     def clean_expiry_date(self):
         expiry_date = self.cleaned_data.get('expiry_date')
