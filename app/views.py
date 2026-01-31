@@ -38,14 +38,14 @@ from .decorators import role_required
 
 def home(request):
     """Home page with statistics and featured medicines"""
-    total_medicines = Medicine.objects.filter(status='available').count()
+    total_medicines = Medicine.objects.filter(status='available').available_only().count()
     total_donors = User.objects.filter(profile__role='donor').count()
     total_ngos = User.objects.filter(profile__role='ngo').count()
     
-    # Featured medicines (highly rated)
+    # Featured medicines (highly rated, non-expired)
     featured = Medicine.objects.filter(
         status='available'
-    ).annotate(
+    ).available_only().annotate(
         avg_rating=Avg('ratings__rating')
     ).order_by('-avg_rating')[:6]
 
@@ -235,9 +235,15 @@ def donor_dashboard(request):
 
 @login_required
 @role_required('donor')
+@login_required
+@role_required('donor')
 def edit_medicine(request, med_id):
     """Edit an existing medicine donation (donor-only, owner-only)."""
-    medicine = get_object_or_404(Medicine, id=med_id, donor=request.user)
+    # Prevent IDOR: only allow editing own medicines
+    try:
+        medicine = Medicine.objects.get(id=med_id, donor=request.user)
+    except Medicine.DoesNotExist:
+        return redirect('donor_dashboard')
 
     if request.method == "POST":
         form = MedicineForm(request.POST, request.FILES, instance=medicine)
@@ -266,7 +272,7 @@ def delete_medicine(request, med_id):
 @role_required('donor')
 @csrf_exempt
 def add_medicine(request):
-    """Add new medicine donation"""
+    """Add new medicine donation with duplicate detection"""
     try:
         profile = request.user.profile
         if profile.role != 'donor':
@@ -282,8 +288,19 @@ def add_medicine(request):
             try:
                 med = form.save(commit=False)
                 med.donor = request.user
-                med.save()
-                messages.success(request, "Medicine listed for donation.")
+                
+                # Check for duplicates (same name + expiry date)
+                duplicates = med.find_duplicates()
+                if duplicates.exists():
+                    # Auto-merge with first duplicate
+                    duplicate_med = duplicates.first()
+                    med.id = duplicate_med.id  # Reuse same ID
+                    med.quantity += duplicate_med.quantity
+                    med.save()
+                    messages.success(request, f"Medicine merged! Quantity increased by {duplicate_med.quantity} units.")
+                else:
+                    med.save()
+                    messages.success(request, "Medicine listed for donation.")
                 return redirect('donor_dashboard')
             except Exception as e:
                 messages.error(request, f"Error saving medicine: {str(e)}")
@@ -353,8 +370,12 @@ def rate_medicine(request, med_id):
 @role_required('ngo')
 def ngo_dashboard(request):
     """NGO dashboard - search and request medicines"""
+    # Enforce role to prevent URL bypass
+    if request.user.profile.role != 'ngo':
+        return redirect('home')
+    
     form = MedicineSearchForm(request.GET)
-    medicines = Medicine.objects.filter(status='available').annotate(
+    medicines = Medicine.objects.filter(status='available').available_only().annotate(
         avg_rating=Avg('ratings__rating'),
         ratings_count=Count('ratings')
     )
@@ -413,8 +434,12 @@ def ngo_dashboard(request):
 @login_required
 @role_required('ngo')
 def request_medicine(request, med_id):
-    """Request a medicine"""
-    medicine = get_object_or_404(Medicine, id=med_id)
+    """Request a medicine (NGO-only)"""
+    # Ensure only available medicines can be requested
+    try:
+        medicine = Medicine.objects.get(id=med_id, status='available')
+    except Medicine.DoesNotExist:
+        return redirect('ngo_dashboard')
 
     if request.method == 'POST':
         form = DonationRequestForm(request.POST)
@@ -801,7 +826,8 @@ def expiry_tracker(request):
     if request.user.profile.role == 'donor':
         medicines = Medicine.objects.filter(donor=request.user, status='available')
     else:
-        medicines = Medicine.objects.filter(status='available')
+        # NGO/delivery only sees non-expired medicines
+        medicines = Medicine.objects.filter(status='available').available_only()
 
     # Categorize medicines by expiry status
     expiring_soon = []
@@ -1186,10 +1212,15 @@ def find_nearest_delivery_boy(donor_lat, donor_lon, exclude_busy=True):
 
 @login_required
 @role_required('delivery_boy')
+@login_required
 def delivery_boy_dashboard(request):
     """
     Delivery boy dashboard showing assigned deliveries and statistics.
     """
+    # Enforce delivery_boy role
+    if request.user.profile.role != 'delivery_boy':
+        return redirect('home')
+    
     try:
         delivery_boy = request.user.delivery_boy
     except DeliveryBoy.DoesNotExist:
@@ -1240,12 +1271,16 @@ def delivery_boy_dashboard(request):
 def delivery_detail(request, delivery_id):
     """
     Delivery detail view for delivery boy to update status and location.
+    Prevents IDOR by verifying the delivery is assigned to the current user.
     """
-    delivery = get_object_or_404(Delivery, id=delivery_id)
+    # Prevent IDOR: only fetch delivery assigned to current user
+    try:
+        delivery = Delivery.objects.get(id=delivery_id, delivery_boy__user=request.user)
+    except Delivery.DoesNotExist:
+        return redirect('delivery_boy_dashboard')
     
-    # Only delivery boy assigned to this delivery can view it
-    if request.user != delivery.delivery_boy.user:
-        messages.error(request, "You don't have permission to view this delivery.")
+    # Double-check role and ownership (defense in depth)
+    if request.user.profile.role != 'delivery_boy' or request.user != delivery.delivery_boy.user:
         return redirect('delivery_boy_dashboard')
     
     if request.method == 'POST':
@@ -1375,6 +1410,10 @@ def delivery_assign(request):
 @require_POST
 def claim_pickup(request):
     """Allow a delivery boy to claim an unassigned pickup (POST: pickup_id)"""
+    # Enforce delivery_boy role
+    if request.user.profile.role != 'delivery_boy':
+        return redirect('home')
+    
     try:
         delivery_boy = request.user.delivery_boy
     except DeliveryBoy.DoesNotExist:
@@ -1437,10 +1476,14 @@ def delivery_track_admin(request, delivery_id):
     """
     Admin view to track delivery progress with live map.
     """
-    delivery = get_object_or_404(Delivery, id=delivery_id)
-    
+    # Enforce admin-only access
     if not request.user.is_superuser and request.user.profile.role != 'admin':
-        messages.error(request, "You don't have permission to view this.")
+        return redirect('home')
+    
+    # Admin can view any delivery
+    try:
+        delivery = Delivery.objects.get(id=delivery_id)
+    except Delivery.DoesNotExist:
         return redirect('home')
     
     locations = delivery.locations.all()
@@ -1458,9 +1501,15 @@ def delivery_track_admin(request, delivery_id):
 def delivery_track_ngo(request, delivery_id):
     """
     NGO view to track delivery progress with live map.
+    Prevents IDOR by verifying the delivery belongs to the requesting NGO.
     """
-    delivery = get_object_or_404(Delivery, id=delivery_id)
+    # Prevent IDOR: only fetch delivery assigned to requesting NGO
+    try:
+        delivery = Delivery.objects.get(id=delivery_id, pickup_delivery__ngo=request.user)
+    except Delivery.DoesNotExist:
+        return redirect('pickup_delivery_dashboard')
     
+    # Double-check NGO ownership (defense in depth)
     if request.user != delivery.pickup_delivery.ngo:
         messages.error(request, "You don't have permission to view this delivery.")
         return redirect('home')
@@ -1611,6 +1660,10 @@ def get_delivery_status(request, delivery_id):
 @role_required('donor','ngo','delivery_boy','admin')
 def emergency_alerts(request):
     """View all active emergency alerts"""
+    # Enforce NGO-only view (donors can see but NGO priority)
+    if request.user.profile.role not in ['ngo', 'admin', 'donor']:
+        return redirect('home')
+    
     alerts = EmergencyAlert.objects.filter(is_active=True).order_by('-priority', '-created_at')
     
     # Add time remaining for each alert
@@ -2036,7 +2089,8 @@ def api_medicine_search(request):
     longitude = request.GET.get('lng')
     radius = request.GET.get('radius', 50)  # km
     
-    medicines = Medicine.objects.filter(status='available')
+    # Only return non-expired medicines
+    medicines = Medicine.objects.filter(status='available').available_only()
     
     if query:
         medicines = medicines.filter(
@@ -2152,10 +2206,19 @@ def messages_list(request):
 @login_required
 @role_required('ngo', 'donor')
 def message_detail(request, conv_id):
-    """View a specific conversation and send messages"""
-    conversation = get_object_or_404(Conversation, id=conv_id)
+    """View a specific conversation and send messages (IDOR-protected)"""
+    # Prevent IDOR: fetch conversation only if user is part of it
+    # Use filter instead of get to prevent information leakage about existence
+    conversation = None
+    if request.user.profile.role == 'ngo':
+        conversation = Conversation.objects.filter(id=conv_id, ngo=request.user).first()
+    else:
+        conversation = Conversation.objects.filter(id=conv_id, donor=request.user).first()
     
-    # Check if user is part of this conversation
+    if not conversation:
+        return redirect('messages_list')
+    
+    # Double-check user is part of conversation (defense in depth)
     if request.user != conversation.donor and request.user != conversation.ngo:
         return redirect('messages_list')
     
@@ -2262,10 +2325,15 @@ def message_detail(request, conv_id):
 @role_required('ngo', 'donor')
 def start_conversation(request, med_id):
     """Start or get existing conversation between NGO and donor"""
-    medicine = get_object_or_404(Medicine, id=med_id)
+    # Only NGOs can initiate conversations with donors
+    if request.user.profile.role != 'ngo':
+        return redirect('home')
     
-    if request.user.profile.role == 'ngo':
-        # NGO wants to contact donor
+    # Get medicine (verify it exists and is available, prevent IDOR)
+    try:
+        medicine = Medicine.objects.get(id=med_id, status='available')
+    except Medicine.DoesNotExist:
+        return redirect('home')
         donor = medicine.donor
         ngo = request.user
     else:

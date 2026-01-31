@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
 from .models import UserProfile
@@ -8,7 +8,7 @@ from django.dispatch import receiver
 from django.core.mail import send_mail
 from django.conf import settings
 
-from .models import Notification
+from .models import Notification, Medicine
 
 
 @receiver(post_save, sender=User)
@@ -19,6 +19,12 @@ def ensure_profile_exists(sender, instance: User, created: bool, **kwargs):
     """
     if created:
         UserProfile.objects.get_or_create(user=instance)
+
+
+@receiver(post_save, sender=Medicine)
+def auto_mark_expired_medicine(sender, instance: Medicine, **kwargs):
+    """Auto-mark medicines as expired when saved (if expiry date has passed)"""
+    instance.mark_expired_if_needed()
 
 
 @receiver(post_save, sender=Notification)

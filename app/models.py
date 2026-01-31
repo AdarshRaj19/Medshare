@@ -63,6 +63,25 @@ class UserProfile(models.Model):
         return f"{self.user.username} ({self.get_role_display()})"
 
 
+class MedicineQuerySet(models.QuerySet):
+    """Custom QuerySet to filter out expired medicines by default"""
+    def available_only(self):
+        """Return only non-expired medicines"""
+        from django.utils import timezone
+        today = timezone.now().date()
+        return self.exclude(status='expired').filter(expiry_date__gte=today)
+
+
+class MedicineManager(models.Manager):
+    """Custom manager for Medicine model"""
+    def get_queryset(self):
+        return MedicineQuerySet(self.model, using=self._db)
+    
+    def available_only(self):
+        """Return only non-expired, available medicines"""
+        return self.get_queryset().available_only()
+
+
 class Medicine(models.Model):
     STATUS_CHOICES = [
         ('available', 'Available'),
@@ -121,6 +140,9 @@ class Medicine(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     viewed_by = models.ManyToManyField(User, related_name='viewed_medicines', blank=True)
+    
+    # Custom manager
+    objects = MedicineManager()
 
     class Meta:
         ordering = ['-created_at']
@@ -164,6 +186,34 @@ class Medicine(models.Model):
     def is_expired(self):
         from datetime import date
         return self.expiry_date < date.today()
+    
+    def mark_expired_if_needed(self):
+        """Auto-mark medicine as expired if expiry date has passed"""
+        if self.is_expired() and self.status != 'expired':
+            self.status = 'expired'
+            self.save(update_fields=['status', 'updated_at'])
+            return True
+        return False
+    
+    def find_duplicates(self):
+        """Find medicines with same name + expiry date by same donor (exclude self)"""
+        duplicates = Medicine.objects.filter(
+            donor=self.donor,
+            name=self.name,
+            expiry_date=self.expiry_date,
+            status='available'
+        ).exclude(id=self.id)
+        return duplicates
+    
+    def merge_with_duplicate(self, other_medicine):
+        """Merge another medicine into this one (sum quantities)"""
+        if other_medicine.donor != self.donor or other_medicine.name != self.name:
+            raise ValueError("Can only merge medicines from same donor with same name")
+        
+        self.quantity += other_medicine.quantity
+        self.save(update_fields=['quantity', 'updated_at'])
+        other_medicine.delete()
+        return self
 
 
 class MedicineRating(models.Model):
