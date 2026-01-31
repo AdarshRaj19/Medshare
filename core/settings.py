@@ -96,18 +96,17 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20
 }
 
-MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'
-# Email Configuration
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Console backend for development
-# For production, use:
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = 'your-email@gmail.com'
-# EMAIL_HOST_PASSWORD = 'your-app-password'
+MAPS_API_KEY = os.environ.get('MAPS_API_KEY', 'YOUR_GOOGLE_MAPS_API_KEY')
+# Email Configuration (use env vars to override defaults)
+EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+# Common SMTP settings (optional - set in environment for production)
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 0)) if os.environ.get('EMAIL_PORT') else None
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
-DEFAULT_FROM_EMAIL = 'noreply@medshare.com'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@medshare.com')
 
 # Celery configuration
 CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
