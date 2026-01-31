@@ -75,6 +75,11 @@ urlpatterns = [
     # Notifications
     path('notifications/', views.notifications, name='notifications'),
     
+    # Messaging
+    path('messages/', views.messages_list, name='messages_list'),
+    path('messages/<int:conv_id>/', views.message_detail, name='message_detail'),
+    path('medicine/<int:med_id>/contact-donor/', views.start_conversation, name='start_conversation'),
+    
     # Admin Routes
     path('reports/', views.admin_reports, name='admin_reports'),
     path('reports-advanced/', views.admin_reports_advanced, name='admin_reports_advanced'),

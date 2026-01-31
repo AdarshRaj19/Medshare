@@ -91,6 +91,13 @@
             </a>
             {% endif %}
 
+            <a href="{% url 'messages_list' %}" title="Messages">
+                <i class="fas fa-envelope"></i>
+                {% if unread_messages_count|default:0 %}
+                    <span class="badge badge-danger">{{ unread_messages_count }}</span>
+                {% endif %}
+            </a>
+
             <a href="{% url 'notifications' %}" title="Notifications">
                 <i class="fas fa-bell"></i>
                 {% if unread_notifications_count|default:0 %}

@@ -127,7 +127,7 @@
                 </div>
                 {% endif %}
 
-                <!-- Donor Info -->
+                <!-- Donor Info (Hide Email/Phone - Privacy) -->
                 <div style="background: linear-gradient(135deg, rgba(46,204,113,0.1) 0%, rgba(52,73,94,0.1) 100%); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
                     <h3 style="color: var(--dark); margin-bottom: 15px;">Donor Information</h3>
                     <div style="display: flex; align-items: center; gap: 15px;">
@@ -135,22 +135,27 @@
                             <i class="fas fa-user"></i>
                         </div>
                         <div>
-                            <p style="color: var(--dark); font-weight: bold; margin-bottom: 3px;">{{ medicine.donor.get_full_name|default:medicine.donor.username }}</p>
+                            <p style="color: var(--dark); font-weight: bold; margin-bottom: 3px;">Donor ({{ medicine.donor.profile.get_role_display }})</p>
                             {% if medicine.donor.profile.organization_name %}
                             <p style="color: #666; font-size: 14px; margin-bottom: 3px;">{{ medicine.donor.profile.organization_name }}</p>
                             {% endif %}
                             <p style="color: #999; font-size: 12px;">
-                                <i class="fas fa-envelope"></i> {{ medicine.donor.email }}
+                                <i class="fas fa-lock"></i> Contact via MedShare messaging for privacy
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Request Button -->
+                <!-- Contact Donor Button -->
                 {% if user.is_authenticated and user.profile.role == "ngo" and medicine.status == "available" %}
-                <a href="{% url 'request_medicine' medicine.id %}" class="btn-primary" style="width: 100%; padding: 14px; text-align: center; font-size: 16px; margin-bottom: 15px;">
-                    <i class="fas fa-hand-paper"></i> Request This Medicine
-                </a>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px;">
+                    <a href="{% url 'start_conversation' medicine.id %}" class="btn-primary" style="padding: 14px; text-align: center; font-size: 14px;">
+                        <i class="fas fa-comments"></i> Contact Donor (Chat)
+                    </a>
+                    <a href="{% url 'request_medicine' medicine.id %}" class="btn-secondary" style="padding: 14px; text-align: center; font-size: 14px;">
+                        <i class="fas fa-hand-paper"></i> Request Medicine
+                    </a>
+                </div>
                 {% elif not user.is_authenticated %}
                 <a href="{% url 'login' %}" class="btn-primary" style="width: 100%; padding: 14px; text-align: center; font-size: 16px; margin-bottom: 15px;">
                     <i class="fas fa-sign-in-alt"></i> Login to Request

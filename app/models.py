@@ -669,3 +669,76 @@ class MedicineInventory(models.Model):
     def needs_reorder(self):
         return self.current_stock <= self.minimum_stock_level
 
+
+class Conversation(models.Model):
+    """Store conversations between donor and NGO about a medicine"""
+    medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE, related_name='conversations')
+    donor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='donor_conversations')
+    ngo = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ngo_conversations')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('medicine', 'donor', 'ngo')
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.ngo.username} & {self.donor.username} - {self.medicine.name}"
+
+    def get_other_user(self, current_user):
+        """Return the other party in the conversation"""
+        if current_user == self.donor:
+            return self.ngo
+        return self.donor
+
+    def get_other_user_role(self, current_user):
+        """Return role of the other party"""
+        other = self.get_other_user(current_user)
+        return other.profile.get_role_display()
+
+
+class Message(models.Model):
+    """Store individual messages in a conversation"""
+    MESSAGE_TYPES = [
+        ('text', 'Text Message'),
+        ('location', 'Location Shared'),
+        ('location_request', 'Location Request'),
+    ]
+    
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    message_type = models.CharField(max_length=20, choices=MESSAGE_TYPES, default='text')
+    content = models.TextField()
+    
+    # For location messages
+    location_latitude = models.FloatField(null=True, blank=True)
+    location_longitude = models.FloatField(null=True, blank=True)
+    location_name = models.CharField(max_length=200, null=True, blank=True)
+    
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.sender.username}: {self.content[:50]}"
+    
+    def get_distance_to(self, latitude, longitude):
+        """Calculate distance in km using Haversine formula"""
+        if not self.location_latitude or not self.location_longitude:
+            return None
+        
+        from math import radians, cos, sin, asin, sqrt
+        
+        lat1, lon1 = radians(self.location_latitude), radians(self.location_longitude)
+        lat2, lon2 = radians(latitude), radians(longitude)
+        
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+        c = 2 * asin(sqrt(a))
+        r = 6371  # Radius of earth in kilometers
+        
+        return round(c * r, 2)
+

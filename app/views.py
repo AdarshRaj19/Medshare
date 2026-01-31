@@ -16,6 +16,7 @@ from math import radians, cos, sin, asin, sqrt
 import secrets
 from io import BytesIO
 import csv
+from django.urls import reverse
 
 from .models import (
     Medicine, DonationRequest, UserProfile, MedicineRating,
@@ -2121,4 +2122,162 @@ def api_subcategories(request):
     else:
         data = []
     return JsonResponse(data, safe=False)
+
+
+# ==================== MESSAGING VIEWS ====================
+
+from .models import Conversation, Message
+
+@login_required
+@role_required('ngo', 'donor')
+def messages_list(request):
+    """List all conversations for the current user"""
+    if request.user.profile.role == 'ngo':
+        conversations = Conversation.objects.filter(ngo=request.user)
+    else:
+        conversations = Conversation.objects.filter(donor=request.user)
+    
+    # Mark all messages as read when viewing conversations list
+    Message.objects.filter(
+        conversation__in=conversations,
+        is_read=False
+    ).exclude(sender=request.user).update(is_read=True)
+    
+    context = {
+        'conversations': conversations,
+    }
+    return render(request, 'messages_list.html', context)
+
+
+@login_required
+@role_required('ngo', 'donor')
+def message_detail(request, conv_id):
+    """View a specific conversation and send messages"""
+    conversation = get_object_or_404(Conversation, id=conv_id)
+    
+    # Check if user is part of this conversation
+    if request.user != conversation.donor and request.user != conversation.ngo:
+        return redirect('messages_list')
+    
+    # Mark all messages in this conversation as read
+    Message.objects.filter(conversation=conversation, is_read=False).exclude(
+        sender=request.user
+    ).update(is_read=True)
+    
+    if request.method == 'POST':
+        content = request.POST.get('content', '').strip()
+        message_type = request.POST.get('message_type', 'text')
+        new_msg = None
+
+        if message_type == 'location_request':
+            # NGO requesting location from donor
+            if request.user == conversation.ngo:
+                new_msg = Message.objects.create(
+                    conversation=conversation,
+                    sender=request.user,
+                    message_type='location_request',
+                    content='📍 Requesting your location for distance calculation',
+                )
+                conversation.save()
+        elif message_type == 'location' and content:
+            # Donor sharing location
+            try:
+                lat, lon = map(float, content.split(','))
+                location_name = request.POST.get('location_name', 'Shared Location')
+                new_msg = Message.objects.create(
+                    conversation=conversation,
+                    sender=request.user,
+                    message_type='location',
+                    content=location_name,
+                    location_latitude=lat,
+                    location_longitude=lon,
+                )
+                # Optionally update donor profile with latest shared location
+                try:
+                    profile = request.user.profile
+                    profile.latitude = lat
+                    profile.longitude = lon
+                    profile.save()
+                except:
+                    pass
+                conversation.save()
+            except:
+                messages.error(request, 'Invalid location coordinates')
+        elif message_type == 'text' and content:
+            # Regular text message
+            new_msg = Message.objects.create(
+                conversation=conversation,
+                sender=request.user,
+                message_type='text',
+                content=content,
+            )
+            conversation.save()
+
+        # Send email notification to the other party (non-blocking)
+        if new_msg:
+            try:
+                recipient = conversation.get_other_user(request.user)
+                if recipient and recipient.email:
+                    subject = f"New message on MedShare about {conversation.medicine.name}"
+                    convo_url = request.build_absolute_uri(reverse('message_detail', args=[conversation.id]))
+                    body = (
+                        f"Hi {recipient.get_full_name() or recipient.username},\n\n"
+                        f"You have a new message from {request.user.get_full_name() or request.user.username} regarding '{conversation.medicine.name}'.\n\n"
+                        f"Open the conversation: {convo_url}\n\n"
+                        "Regards,\nMedShare Team"
+                    )
+                    send_mail(subject, body, getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER), [recipient.email], fail_silently=True)
+            except Exception:
+                # Don't let email errors block messaging
+                pass
+
+        return redirect('message_detail', conv_id=conversation.id)
+    
+    messages_list = conversation.messages.all()
+    other_user = conversation.get_other_user(request.user)
+    
+    # Get current user's location for distance calculation
+    user_location = None
+    if request.user.profile.latitude and request.user.profile.longitude:
+        user_location = (request.user.profile.latitude, request.user.profile.longitude)
+    
+    # Pre-calculate distances for location messages
+    for msg in messages_list:
+        msg.distance = None
+        if msg.message_type == 'location' and user_location:
+            msg.distance = msg.get_distance_to(user_location[0], user_location[1])
+    
+    context = {
+        'conversation': conversation,
+        'messages': messages_list,
+        'other_user': other_user,
+        'other_user_role': conversation.get_other_user_role(request.user),
+        'medicine': conversation.medicine,
+        'user_location': user_location,
+    }
+    return render(request, 'message_detail.html', context)
+
+
+@login_required
+@role_required('ngo', 'donor')
+def start_conversation(request, med_id):
+    """Start or get existing conversation between NGO and donor"""
+    medicine = get_object_or_404(Medicine, id=med_id)
+    
+    if request.user.profile.role == 'ngo':
+        # NGO wants to contact donor
+        donor = medicine.donor
+        ngo = request.user
+    else:
+        # Shouldn't happen (donors can't initiate, but allow as fallback)
+        return redirect('medicine_detail', med_id=med_id)
+    
+    # Get or create conversation
+    conversation, created = Conversation.objects.get_or_create(
+        medicine=medicine,
+        donor=donor,
+        ngo=ngo,
+    )
+    
+    return redirect('message_detail', conv_id=conversation.id)
 
