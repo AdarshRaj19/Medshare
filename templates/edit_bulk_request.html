@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Bulk Donation Request</h2>
+    <div class="mb-4">
+        <strong>Title:</strong> {{ bulk_request.title }}<br>
+        <strong>Description:</strong> {{ bulk_request.description }}<br>
+        <strong>Priority:</strong> {{ bulk_request.get_priority_display }}<br>
+        <strong>Status:</strong> {{ bulk_request.get_status_display }}
+    </div>
+    <h4>Add Item to Bulk Request</h4>
+    <form method="post" class="mb-4">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_item">
+        <div class="row">
+            <div class="col-md-3 mb-2">
+                <select name="medicine_category" class="form-select" required>
+                    <option value="">Category</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 mb-2">
+                <input type="text" name="medicine_name" class="form-control" placeholder="Medicine Name" required>
+            </div>
+            <div class="col-md-2 mb-2">
+                <input type="number" name="quantity_requested" class="form-control" placeholder="Quantity" min="1" required>
+            </div>
+            <div class="col-md-2 mb-2">
+                <input type="text" name="unit" class="form-control" placeholder="Unit (e.g., tablets)" value="units" required>
+            </div>
+            <div class="col-md-2 mb-2">
+                <select name="urgency_level" class="form-select">
+                    <option value="medium" selected>Medium</option>
+                    <option value="low">Low</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                </select>
+            </div>
+        </div>
+        <div class="mb-2">
+            <textarea name="notes" class="form-control" rows="1" placeholder="Notes (optional)"></textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Add Item</button>
+    </form>
+    <h4>Items in This Bulk Request</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Name</th>
+                <th>Quantity</th>
+                <th>Unit</th>
+                <th>Urgency</th>
+                <th>Notes</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in bulk_request.items.all %}
+            <tr>
+                <td>{{ item.medicine_category.name }}</td>
+                <td>{{ item.medicine_name }}</td>
+                <td>{{ item.quantity_requested }}</td>
+                <td>{{ item.unit }}</td>
+                <td>{{ item.get_urgency_level_display }}</td>
+                <td>{{ item.notes }}</td>
+                <td>
+                    <form method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete_item">
+                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="text-center">No items added yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="submit">
+        <button type="submit" class="btn btn-primary" {% if not bulk_request.items.all %}disabled{% endif %}>Submit Bulk Request</button>
+    </form>
+</div>
+{% endblock %}

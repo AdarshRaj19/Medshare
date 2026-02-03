@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Expiry Tracker - MedShare{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <h1 class="display-4 fw-bold mb-2">
+                <i class="fas fa-hourglass-end text-danger"></i> Expiry Tracker
+            </h1>
+            <p class="lead text-muted">Monitor medicine expiry dates in real-time</p>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-danger text-white">
+                <div class="card-body text-center">
+                    <h3>{{ expiring_very_soon|length }}</h3>
+                    <p class="mb-0">Expiring within 7 days</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h3>{{ expiring_soon|length }}</h3>
+                    <p class="mb-0">Expiring within 30 days</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>{{ normal|length }}</h3>
+                    <p class="mb-0">Still good (30+ days)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm bg-secondary text-white">
+                <div class="card-body text-center">
+                    <h3>{{ already_expired|length }}</h3>
+                    <p class="mb-0">Already expired</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Expiring Very Soon -->
+    {% if expiring_very_soon %}
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <h3 class="text-danger mb-3">
+                    <i class="fas fa-exclamation-circle"></i> Critical - Expiring within 7 days
+                </h3>
+            </div>
+            {% for medicine in expiring_very_soon %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-danger border-2 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="card-title">{{ medicine.name }}</h5>
+                                    <p class="text-muted mb-2">Qty: {{ medicine.quantity }} {{ medicine.unit }}</p>
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-clock"></i> {{ medicine.days_left }} days left
+                                    </span>
+                                </div>
+                                <a href="{% url 'medicine_detail' medicine.id %}" class="btn btn-sm btn-outline-danger">
+                                    View
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Expiring Soon -->
+    {% if expiring_soon %}
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <h3 class="text-warning mb-3">
+                    <i class="fas fa-exclamation-triangle"></i> Expiring within 30 days
+                </h3>
+            </div>
+            {% for medicine in expiring_soon %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-warning border-2 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="card-title">{{ medicine.name }}</h5>
+                                    <p class="text-muted mb-2">Qty: {{ medicine.quantity }} {{ medicine.unit }}</p>
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-calendar"></i> {{ medicine.days_left }} days left
+                                    </span>
+                                </div>
+                                <a href="{% url 'medicine_detail' medicine.id %}" class="btn btn-sm btn-outline-warning">
+                                    View
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Already Expired -->
+    {% if already_expired %}
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <h3 class="text-secondary mb-3">
+                    <i class="fas fa-times-circle"></i> Already Expired
+                </h3>
+            </div>
+            {% for medicine in already_expired %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-secondary border-2 shadow-sm opacity-75">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="card-title">{{ medicine.name }}</h5>
+                                    <p class="text-muted mb-2">Qty: {{ medicine.quantity }} {{ medicine.unit }}</p>
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-ban"></i> Expired {{ medicine.days_left|add:medicine.days_left|add:medicine.days_left }} days ago
+                                    </span>
+                                </div>
+                                <a href="{% url 'medicine_detail' medicine.id %}" class="btn btn-sm btn-outline-secondary">
+                                    View
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Good Medicines -->
+    {% if normal %}
+        <div class="row">
+            <div class="col-lg-12">
+                <h3 class="text-success mb-3">
+                    <i class="fas fa-check-circle"></i> Good Condition (30+ days)
+                </h3>
+            </div>
+            {% for medicine in normal %}
+                <div class="col-md-6 mb-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="card-title">{{ medicine.name }}</h5>
+                                    <p class="text-muted mb-2">Qty: {{ medicine.quantity }} {{ medicine.unit }}</p>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> {{ medicine.days_left }} days left
+                                    </span>
+                                </div>
+                                <a href="{% url 'medicine_detail' medicine.id %}" class="btn btn-sm btn-outline-success">
+                                    View
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Empty State -->
+    {% if not total_medicines %}
+        <div class="text-center py-5">
+            <i class="fas fa-inbox text-muted" style="font-size: 4rem;"></i>
+            <h4 class="mt-3 text-muted">No medicines to track</h4>
+            <p class="text-muted">Start by adding medicines to your inventory.</p>
+            {% if user.profile.role == 'donor' %}
+                <a href="{% url 'add_medicine' %}" class="btn btn-success mt-3">
+                    <i class="fas fa-plus"></i> Add Medicine
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .countdown-timer {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+</style>
+
+<script>
+    // Real-time countdown timers
+    function updateCountdown() {
+        const elements = document.querySelectorAll('[data-expiry-date]');
+        elements.forEach(el => {
+            const expiryDate = new Date(el.dataset.expiryDate);
+            const now = new Date();
+            const diff = expiryDate - now;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            if (days < 0) {
+                el.textContent = 'Expired';
+                el.classList.add('badge', 'bg-danger');
+            } else if (days <= 7) {
+                el.textContent = `${days} days left`;
+                el.classList.add('badge', 'bg-danger');
+            } else if (days <= 30) {
+                el.textContent = `${days} days left`;
+                el.classList.add('badge', 'bg-warning');
+            }
+        });
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 60000); // Update every minute
+</script>
+{% endblock %}

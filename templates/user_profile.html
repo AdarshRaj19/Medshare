@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}User Profile - MedShare{% endblock %}
+
+{% block content %}
+<div style="max-width: 700px; margin: 40px auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h1 style="color: var(--dark); margin: 0;">
+            <i class="fas fa-user-circle"></i> My Profile
+        </h1>
+    </div>
+
+    <div class="card app-card">
+        <div class="card-header">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <!-- Profile Picture Display -->
+                <div style="flex-shrink: 0;">
+                    {% if user.profile.profile_picture %}
+                        <img src="{{ user.profile.profile_picture.url }}" 
+                             alt="Profile" 
+                             style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #007bff;">
+                    {% else %}
+                        <div style="width: 120px; height: 120px; border-radius: 50%; background: #e9ecef; display: flex; align-items: center; justify-content: center; border: 3px solid #ddd;">
+                            <i class="fas fa-user" style="font-size: 50px; color: #999;"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- User Info -->
+                <div style="flex-grow: 1;">
+                    <h2 class="card-title">{{ user.get_full_name|default:user.username }}</h2>
+                    <p style="color: #666; margin-top: 5px;">@{{ user.username }} • {{ user.profile.get_role_display }}</p>
+                    {% if user.profile.organization_name %}
+                        <p style="color: #999; font-size: 14px; margin-top: 5px;">
+                            <i class="fas fa-building"></i> {{ user.profile.organization_name }}
+                        </p>
+                    {% endif %}
+                    {% if user.profile.bio %}
+                        <p style="color: #666; font-size: 14px; margin-top: 5px;">{{ user.profile.bio }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label class="form-label"><i class="fas fa-phone"></i> Phone Number</label>
+                {{ form.phone }}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><i class="fas fa-building"></i> Organization Name</label>
+                {{ form.organization_name }}
+                <small style="color: #999;">For NGOs and hospitals</small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><i class="fas fa-align-left"></i> Bio</label>
+                {{ form.bio }}
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-map-marker-alt"></i> Latitude</label>
+                    {{ form.latitude }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-map-marker-alt"></i> Longitude</label>
+                    {{ form.longitude }}
+                </div>
+            </div>
+
+            <div style="margin-top:8px; margin-bottom:12px;">
+                <button type="button" id="use-my-location" class="btn-outline" style="padding:8px 12px;">
+                    <i class="fas fa-location-arrow"></i> Use my current location
+                </button>
+                <small id="location-status" style="margin-left:12px; color:#666;"></small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><i class="fas fa-image"></i> Profile Picture</label>
+                {{ form.profile_picture }}
+                <small style="color: #999; display: block; margin-top: 8px;">
+                    📷 Upload a JPG or PNG image (Max 5MB). Recommended size: 400x400px
+                </small>
+                {% if user.profile.profile_picture %}
+                    <small style="color: #28a745; display: block; margin-top: 5px;">
+                        ✅ Current image: <a href="{{ user.profile.profile_picture.url }}" target="_blank">View</a>
+                    </small>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 14px;">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+        </form>
+    </div>
+
+    <!-- Account Info -->
+    <div class="card app-card" style="margin-top: 25px;">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-info-circle"></i> Account Information</h3>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <p style="color: #999; font-size: 12px; margin-bottom: 5px;">EMAIL</p>
+                <p style="color: var(--dark);">{{ user.email }}</p>
+            </div>
+            <div>
+                <p style="color: #999; font-size: 12px; margin-bottom: 5px;">ACCOUNT STATUS</p>
+                <p style="color: var(--dark);">
+                    {% if user.is_active %}
+                        <span class="badge badge-success">Active</span>
+                    {% else %}
+                        <span class="badge badge-danger">Inactive</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <p style="color: #999; font-size: 12px; margin-bottom: 5px;">USER TYPE</p>
+                <p style="color: var(--dark);">{{ user.profile.get_role_display }}</p>
+            </div>
+            <div>
+                <p style="color: #999; font-size: 12px; margin-bottom: 5px;">MEMBER SINCE</p>
+                <p style="color: var(--dark);">{{ user.date_joined|date:"M d, Y" }}</p>
+            </div>
+            <div>
+                <p style="color: #999; font-size: 12px; margin-bottom: 5px;">LAST LOGIN</p>
+                <p style="color: var(--dark);">{{ user.last_login|date:"M d, Y H:i"|default:"Never" }}</p>
+            </div>
+            <div>
+                <p style="color: #999; font-size: 12px; margin-bottom: 5px;">VERIFIED</p>
+                <p style="color: var(--dark);">
+                    {% if user.profile.verified %}
+                        <span class="badge badge-success"><i class="fas fa-check"></i> Verified</span>
+                    {% else %}
+                        <span class="badge badge-warning"><i class="fas fa-clock"></i> Pending</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    {% if user.profile.role == "donor" %}
+    <div class="card app-card" style="margin-top: 25px;">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-chart-bar"></i> Your Donation Statistics</h3>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+            <div>
+                <p style="color: #999; font-size: 12px; margin-bottom: 5px;">MEDICINES DONATED</p>
+                <p style="color: var(--dark); font-size: 24px; font-weight: bold;">{{ donor_stats.medicines_donated|default:0 }}</p>
+            </div>
+            <div>
+                <p style="color: #999; font-size: 12px; margin-bottom: 5px;">ACTIVE MEDICINES</p>
+                <p style="color: var(--dark); font-size: 24px; font-weight: bold;">{{ donor_stats.active_medicines|default:0 }}</p>
+            </div>
+            <div>
+                <p style="color: #999; font-size: 12px; margin-bottom: 5px;">TOTAL RATINGS</p>
+                <p style="color: var(--dark); font-size: 24px; font-weight: bold;">{{ donor_stats.total_ratings|default:0 }}</p>
+            </div>
+        </div>
+    </div>
+    {% elif user.profile.role == "ngo" %}
+    <div class="card app-card" style="margin-top: 25px;">
+        <div class="card-header">
+            <h3 class="card-title"><i class="fas fa-chart-bar"></i> Your Request Statistics</h3>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+            <div>
+                <p style="color: #999; font-size: 12px; margin-bottom: 5px;">REQUESTS MADE</p>
+                <p style="color: var(--dark); font-size: 24px; font-weight: bold;">{{ ngo_stats.requests_made|default:0 }}</p>
+            </div>
+            <div>
+                <p style="color: #999; font-size: 12px; margin-bottom: 5px;">MEDICINES RECEIVED</p>
+                <p style="color: var(--dark); font-size: 24px; font-weight: bold;">{{ ngo_stats.medicines_received|default:0 }}</p>
+            </div>
+            <div>
+                <p style="color: #999; font-size: 12px; margin-bottom: 5px;">PENDING REQUESTS</p>
+                <p style="color: var(--dark); font-size: 24px; font-weight: bold;">{{ ngo_stats.pending_requests|default:0 }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('use-my-location')?.addEventListener('click', function(){
+    const statusEl = document.getElementById('location-status');
+    if (!navigator.geolocation) {
+        statusEl.textContent = 'Geolocation not supported by your browser.';
+        return;
+    }
+    statusEl.textContent = 'Requesting location…';
+    navigator.geolocation.getCurrentPosition(function(pos){
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        // Fill form inputs (Django default ids: id_latitude, id_longitude)
+        const latInput = document.getElementById('id_latitude');
+        const lngInput = document.getElementById('id_longitude');
+        if (latInput) latInput.value = lat.toFixed(4);
+        if (lngInput) lngInput.value = lng.toFixed(4);
+        statusEl.textContent = 'Location set.';
+    }, function(err){
+        console.error('Geolocation error', err);
+        if (err.code === 1) {
+            statusEl.textContent = 'Permission denied. Please allow location access.';
+        } else if (err.code === 2) {
+            statusEl.textContent = 'Position unavailable.';
+        } else if (err.code === 3) {
+            statusEl.textContent = 'Position request timed out.';
+        } else {
+            statusEl.textContent = 'Unable to retrieve location.';
+        }
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+});
+</script>
+{% endblock %}

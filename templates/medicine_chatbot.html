@@ -1,0 +1,424 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Medicine Chatbot - MedShare{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <!-- Sidebar with available medicines -->
+        <div class="col-lg-3">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-pills"></i> Available Medicines</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Click on a medicine to include it as context for your questions.</p>
+                    <div id="medicines-list">
+                        {% for medicine in medicines %}
+                        <button type="button" class="btn btn-sm btn-outline-primary mb-2 w-100 text-start medicine-btn" 
+                                data-medicine-id="{{ medicine.id }}"
+                                data-medicine-name="{{ medicine.name }}"
+                                title="{{ medicine.name }}">
+                            <i class="fas fa-check-circle me-2" style="display:none;"></i>
+                            {{ medicine.name|truncatewords:3 }}
+                        </button>
+                        {% empty %}
+                        <p class="text-muted">No medicines available.</p>
+                        {% endfor %}
+                    </div>
+                    <div class="d-grid mt-3">
+                        <button type="button" class="btn btn-sm btn-secondary" id="clear-medicine-btn">
+                            Clear Selection
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Helpful Links -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-question-circle"></i> Quick Links</h5>
+                </div>
+                <div class="card-body small">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <a href="{% url 'search_medicines' %}" class="text-decoration-none">Browse All Medicines</a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'faq' %}" class="text-decoration-none">FAQ</a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'chat_history' %}" class="text-decoration-none">View Chat History</a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'contact' %}" class="text-decoration-none">Contact Support</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="col-lg-9">
+            <div class="card shadow-sm">
+                <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fas fa-robot"></i> MedShare AI Assistant</h4>
+                        <button type="button" class="btn btn-sm btn-light" id="clear-history-btn" title="Clear chat history">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Messages Area -->
+                <div id="chat-messages" class="card-body" style="height: 400px; overflow-y: auto; background-color: #f8f9fa;">
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-comments fa-3x mb-3"></i>
+                        <p>Welcome! Ask me any questions about medicines, donations, or MedShare services.</p>
+                        <small>Example: "What is paracetamol used for?" or "How do I donate medicines?"</small>
+                    </div>
+                </div>
+
+                <!-- Selected Medicine Display -->
+                <div id="selected-medicine" class="bg-light p-3 border-top" style="display: none;">
+                    <small class="text-muted">Context: </small>
+                    <span id="medicine-context" class="badge bg-primary"></span>
+                    <button type="button" class="btn btn-sm btn-link p-0 ms-2" id="remove-medicine">✕</button>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="card-footer">
+                    <form id="chat-form" onsubmit="sendMessage(event)">
+                        <div class="input-group">
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="message-input"
+                                placeholder="Type your question here... (e.g., 'Is aspirin safe for pregnant women?')"
+                                autocomplete="off"
+                                required
+                            >
+                            <button class="btn btn-primary" type="submit" id="send-btn">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-2">
+                            💡 Tip: Ask specific questions for better answers. For medical advice, consult a healthcare professional.
+                        </small>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Chat Guidelines -->
+            <div class="alert alert-info alert-sm mt-4" role="alert">
+                <small>
+                    <strong><i class="fas fa-lightbulb"></i> Tips:</strong>
+                    You can ask about medicine uses, side effects, donations, NGO services, and more. 
+                    This AI assistant is for general information only - always consult healthcare professionals for medical advice.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Indicator Template -->
+<template id="loading-template">
+    <div class="d-flex align-items-center mb-3">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <span class="text-muted">AI is thinking...</span>
+    </div>
+</template>
+
+<!-- User Message Template -->
+<template id="user-message-template">
+    <div class="d-flex justify-content-end mb-3">
+        <div class="bg-primary text-white p-3 rounded" style="max-width: 80%; word-wrap: break-word;">
+            <p class="mb-0"></p>
+        </div>
+    </div>
+</template>
+
+<!-- AI Response Template -->
+<template id="ai-response-template">
+    <div class="d-flex justify-content-start mb-3">
+        <div class="bg-white border p-3 rounded" style="max-width: 80%; word-wrap: break-word;">
+            <p class="mb-2"></p>
+            <small class="text-muted feedback-text"></small>
+            <div class="mt-2">
+                <button type="button" class="btn btn-sm btn-outline-success feedback-btn" data-feedback="helpful" title="Was this helpful?">
+                    <i class="fas fa-thumbs-up"></i> Helpful
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger feedback-btn" data-feedback="unhelpful" title="Was this not helpful?">
+                    <i class="fas fa-thumbs-down"></i> Not Helpful
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Error Message Template -->
+<template id="error-template">
+    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+        <strong><i class="fas fa-exclamation-circle"></i> Error:</strong>
+        <span class="error-text"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</template>
+
+<style>
+#chat-messages {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+#chat-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+#chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#chat-messages::-webkit-scrollbar-thumb {
+    background: #667eea;
+    border-radius: 4px;
+}
+
+.medicine-btn {
+    transition: all 0.3s ease;
+}
+
+.medicine-btn.selected {
+    background-color: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.medicine-btn.selected i {
+    display: inline !important;
+}
+
+.feedback-btn {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.feedback-btn.voted {
+    pointer-events: none;
+    opacity: 0.7;
+}
+</style>
+
+<script>
+// Global variables
+let selectedMedicineId = null;
+let selectedMedicineName = null;
+let messageCount = 0;
+
+// Initialize chat
+document.addEventListener('DOMContentLoaded', function() {
+    loadChatHistory();
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Medicine selection
+    document.querySelectorAll('.medicine-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            selectMedicine(this.dataset.medicineId, this.dataset.medicineName);
+        });
+    });
+
+    // Clear medicine
+    document.getElementById('clear-medicine-btn').addEventListener('click', clearMedicine);
+    document.getElementById('remove-medicine').addEventListener('click', clearMedicine);
+
+    // Clear history
+    document.getElementById('clear-history-btn').addEventListener('click', clearChatHistory);
+
+    // Message input - allow Shift+Enter for new line, Enter to send
+    document.getElementById('message-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage(e);
+        }
+    });
+}
+
+function selectMedicine(medicineId, medicineName) {
+    selectedMedicineId = medicineId;
+    selectedMedicineName = medicineName;
+
+    // Update UI
+    document.querySelectorAll('.medicine-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+    event.target.closest('.medicine-btn').classList.add('selected');
+
+    // Show selected medicine display
+    document.getElementById('medicine-context').textContent = medicineName;
+    document.getElementById('selected-medicine').style.display = 'block';
+}
+
+function clearMedicine() {
+    selectedMedicineId = null;
+    selectedMedicineName = null;
+
+    document.querySelectorAll('.medicine-btn').forEach(btn => {
+        btn.classList.remove('selected');
+    });
+
+    document.getElementById('selected-medicine').style.display = 'none';
+}
+
+function sendMessage(e) {
+    e.preventDefault();
+
+    const input = document.getElementById('message-input');
+    const message = input.value.trim();
+
+    if (!message) return;
+
+    // Add user message to UI
+    addUserMessage(message);
+
+    // Clear input
+    input.value = '';
+    input.focus();
+
+    // Show loading indicator
+    const loadingEl = document.importNode(
+        document.getElementById('loading-template').content,
+        true
+    );
+    document.getElementById('chat-messages').appendChild(loadingEl);
+    scrollToBottom();
+
+    // Send to API
+    fetch('{% url "chat_message" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({
+            message: message,
+            medicine_id: selectedMedicineId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Remove loading indicator
+        document.getElementById('chat-messages').lastElementChild.remove();
+
+        if (data.success) {
+            addAIResponse(data.response, data.timestamp);
+        } else {
+            addError(data.error || 'Failed to get response');
+        }
+        scrollToBottom();
+    })
+    .catch(error => {
+        document.getElementById('chat-messages').lastElementChild.remove();
+        addError('Network error: ' + error.message);
+        scrollToBottom();
+    });
+}
+
+function addUserMessage(message) {
+    const template = document.getElementById('user-message-template').content.cloneNode(true);
+    template.querySelector('p').textContent = message;
+    document.getElementById('chat-messages').appendChild(template);
+}
+
+function addAIResponse(response, timestamp) {
+    const template = document.getElementById('ai-response-template').content.cloneNode(true);
+    template.querySelector('p').textContent = response;
+
+    const feedbackBtns = template.querySelectorAll('.feedback-btn');
+    feedbackBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            submitFeedback(this);
+        });
+    });
+
+    document.getElementById('chat-messages').appendChild(template);
+}
+
+function addError(errorMsg) {
+    const template = document.getElementById('error-template').content.cloneNode(true);
+    template.querySelector('.error-text').textContent = errorMsg;
+    document.getElementById('chat-messages').appendChild(template);
+}
+
+function submitFeedback(btn) {
+    const feedback = btn.dataset.feedback === 'helpful';
+    btn.classList.add('voted');
+    btn.disabled = true;
+
+    // Optionally send feedback to server
+    // (You can implement feedback storage if needed)
+}
+
+function scrollToBottom() {
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function loadChatHistory() {
+    // Load previous chat history from session storage or API
+    // This is optional - keeps chat in session only
+    const savedMessages = sessionStorage.getItem('chatMessages');
+    if (savedMessages) {
+        const messages = JSON.parse(savedMessages);
+        messages.forEach(msg => {
+            if (msg.type === 'user') {
+                addUserMessage(msg.text);
+            } else {
+                addAIResponse(msg.text, msg.timestamp);
+            }
+        });
+        scrollToBottom();
+    }
+}
+
+function clearChatHistory() {
+    if (confirm('Are you sure you want to clear the chat history? This action cannot be undone.')) {
+        document.getElementById('chat-messages').innerHTML = `
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-comments fa-3x mb-3"></i>
+                <p>Welcome! Ask me any questions about medicines, donations, or MedShare services.</p>
+                <small>Example: "What is paracetamol used for?" or "How do I donate medicines?"</small>
+            </div>
+        `;
+        sessionStorage.removeItem('chatMessages');
+
+        // Optionally call API to clear server-side history
+        fetch('{% url "clear_chat_history" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

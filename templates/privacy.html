@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Privacy Policy | MedShare{% endblock %}
+
+{% block content %}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-shield-alt"></i> Privacy Policy
+                    </h1>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <p class="text-muted">Last updated: January 31, 2026</p>
+                    </div>
+
+                    <div class="privacy-content">
+                        <section class="mb-5">
+                            <h2 class="h4 text-primary mb-3">1. Introduction</h2>
+                            <p>MedShare ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our medicine donation platform.</p>
+                            <p>Please read this privacy policy carefully. If you do not agree with the terms of this privacy policy, please do not access the site.</p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 text-primary mb-3">2. Information We Collect</h2>
+
+                            <h3 class="h5 mb-2">Personal Information</h3>
+                            <p>We may collect personal information that you provide directly to us, including:</p>
+                            <ul>
+                                <li>Name and contact information (email, phone number)</li>
+                                <li>Address and location data</li>
+                                <li>Profile information and preferences</li>
+                                <li>Communication history and messages</li>
+                            </ul>
+
+                            <h3 class="h5 mb-2 mt-4">Usage Information</h3>
+                            <p>We automatically collect certain information when you use our platform:</p>
+                            <ul>
+                                <li>Device information and browser type</li>
+                                <li>IP address and location data</li>
+                                <li>Pages visited and time spent on our site</li>
+                                <li>Medicine donation and request history</li>
+                            </ul>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 text-primary mb-3">3. How We Use Your Information</h2>
+                            <p>We use the information we collect for various purposes, including:</p>
+                            <ul>
+                                <li>Providing and maintaining our medicine donation services</li>
+                                <li>Facilitating communication between donors and recipients</li>
+                                <li>Processing medicine donations and requests</li>
+                                <li>Improving our platform and developing new features</li>
+                                <li>Sending notifications and updates</li>
+                                <li>Ensuring platform security and preventing fraud</li>
+                                <li>Complying with legal obligations</li>
+                            </ul>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 text-primary mb-3">4. Information Sharing</h2>
+                            <p>We do not sell, trade, or otherwise transfer your personal information to third parties, except in the following circumstances:</p>
+                            <ul>
+                                <li>With your explicit consent</li>
+                                <li>To facilitate medicine donations and requests</li>
+                                <li>To comply with legal requirements</li>
+                                <li>To protect our rights and prevent fraud</li>
+                                <li>In connection with a business transfer</li>
+                            </ul>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 text-primary mb-3">5. Data Security</h2>
+                            <p>We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the internet is 100% secure.</p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 text-primary mb-3">6. Your Rights</h2>
+                            <p>You have the following rights regarding your personal information:</p>
+                            <ul>
+                                <li>Access to your personal information</li>
+                                <li>Correction of inaccurate information</li>
+                                <li>Deletion of your personal information</li>
+                                <li>Restriction of processing</li>
+                                <li>Data portability</li>
+                                <li>Objection to processing</li>
+                            </ul>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 text-primary mb-3">7. Cookies and Tracking</h2>
+                            <p>We use cookies and similar technologies to enhance your experience on our platform. You can control cookie settings through your browser preferences.</p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 text-primary mb-3">8. Children's Privacy</h2>
+                            <p>Our services are not intended for children under 13. We do not knowingly collect personal information from children under 13.</p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 text-primary mb-3">9. Changes to This Policy</h2>
+                            <p>We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page and updating the "Last updated" date.</p>
+                        </section>
+
+                        <section class="mb-5">
+                            <h2 class="h4 text-primary mb-3">10. Contact Us</h2>
+                            <p>If you have any questions about this Privacy Policy, please contact us:</p>
+                            <ul>
+                                <li>Email: privacy@medshare.com</li>
+                                <li>Phone: +1 (555) 123-4567</li>
+                                <li>Address: MedShare Privacy Team</li>
+                            </ul>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .privacy-content h2 {
+        border-bottom: 2px solid var(--primary-light);
+        padding-bottom: 0.5rem;
+    }
+
+    .privacy-content h3 {
+        color: var(--text);
+    }
+
+    .privacy-content ul {
+        padding-left: 1.5rem;
+    }
+
+    .privacy-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%) !important;
+    }
+</style>
+
+{% endblock %}

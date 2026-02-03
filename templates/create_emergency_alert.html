@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Emergency Alert - MedShare{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4><i class="fas fa-exclamation-triangle"></i> Create Emergency Medicine Alert</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Emergency alerts</strong> are for urgent medicine needs that require immediate attention.
+                        Use this feature only when you have a genuine emergency situation.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.medicine_category.id_for_label }}" class="form-label">Medicine Category *</label>
+                                    <select name="medicine_category" class="form-control" id="{{ form.medicine_category.id_for_label }}" required>
+                                        <option value="">Select Category</option>
+                                        {% for category in categories %}
+                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="medicine_name" class="form-label">Specific Medicine Name *</label>
+                                    <input type="text" name="medicine_name" class="form-control" id="medicine_name"
+                                           placeholder="e.g., Paracetamol 500mg, Insulin" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="quantity_needed" class="form-label">Quantity Needed *</label>
+                                    <input type="number" name="quantity_needed" class="form-control" id="quantity_needed"
+                                           placeholder="e.g., 100" min="1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="unit" class="form-label">Unit *</label>
+                                    <input type="text" name="unit" class="form-control" id="unit"
+                                           placeholder="e.g., tablets, bottles" value="units" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="priority" class="form-label">Priority Level *</label>
+                                    <select name="priority" class="form-control" id="priority" required>
+                                        <option value="low">Low</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="high">High</option>
+                                        <option value="critical">Critical</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Emergency Description *</label>
+                            <textarea name="description" class="form-control" id="description" rows="3"
+                                      placeholder="Describe the emergency situation and why you need this medicine urgently" required></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="patient_count" class="form-label">Number of Patients Affected</label>
+                                    <input type="number" name="patient_count" class="form-control" id="patient_count"
+                                           placeholder="e.g., 50" min="1">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="deadline" class="form-label">Response Deadline</label>
+                                    <input type="datetime-local" name="deadline" class="form-control" id="deadline">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Location (Optional - for location-based matching)</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <input type="number" name="latitude" class="form-control" placeholder="Latitude" step="0.0001">
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="number" name="longitude" class="form-control" placeholder="Longitude" step="0.0001">
+                                </div>
+                            </div>
+                            <input type="text" name="location_name" class="form-control mt-2"
+                                   placeholder="Location name (e.g., City Hospital, Downtown Clinic)">
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fas fa-exclamation-triangle"></i> Create Emergency Alert
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Get user's current location
+if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(position) {
+        document.querySelector('input[name="latitude"]').value = position.coords.latitude;
+        document.querySelector('input[name="longitude"]').value = position.coords.longitude;
+    });
+}
+</script>
+{% endblock %}

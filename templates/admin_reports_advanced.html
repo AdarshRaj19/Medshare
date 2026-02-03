@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Advanced Reports - MedShare Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="display-6 fw-bold">Advanced Reports & Analytics</h2>
+                    <p class="text-muted">Comprehensive platform statistics and insights</p>
+                </div>
+                <a href="{% url 'export_reports_csv' %}" class="btn btn-primary">
+                    <i class="fas fa-download"></i> Export as CSV
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="text-muted text-uppercase">Total Medicines</h6>
+                            <h2 class="display-6 fw-bold text-success">{{ total_medicines }}</h2>
+                        </div>
+                        <i class="fas fa-capsules text-success opacity-25" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="text-muted text-uppercase">Available</h6>
+                            <h2 class="display-6 fw-bold text-primary">{{ available }}</h2>
+                        </div>
+                        <i class="fas fa-check-circle text-primary opacity-25" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="text-muted text-uppercase">Donated</h6>
+                            <h2 class="display-6 fw-bold text-success">{{ donated }}</h2>
+                        </div>
+                        <i class="fas fa-heart text-success opacity-25" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="text-muted text-uppercase">Expired</h6>
+                            <h2 class="display-6 fw-bold text-danger">{{ expired }}</h2>
+                        </div>
+                        <i class="fas fa-ban text-danger opacity-25" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Donors Registered</h5>
+                    <h2 class="display-5 fw-bold text-info">{{ total_donors }}</h2>
+                    <p class="text-muted small">Active medicine donors</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">NGOs/Hospitals</h5>
+                    <h2 class="display-5 fw-bold text-warning">{{ total_ngos }}</h2>
+                    <p class="text-muted small">Partner organizations</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Donation Requests -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Total Requests</h5>
+                    <h3 class="fw-bold text-primary">{{ total_requests }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Pending</h5>
+                    <h3 class="fw-bold text-warning">{{ pending_requests }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Completed</h5>
+                    <h3 class="fw-bold text-success">{{ completed_requests }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Medicines -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">Top Rated Medicines</h5>
+                </div>
+                <div class="card-body">
+                    {% if top_medicines %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Medicine Name</th>
+                                        <th>Donor</th>
+                                        <th>Avg Rating</th>
+                                        <th>Reviews</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for medicine in top_medicines %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ medicine.name }}</strong>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'user_profile' %}">{{ medicine.donor.username }}</a>
+                                            </td>
+                                            <td>
+                                                {% if medicine.avg_rating %}
+                                                    <span class="badge bg-success">
+                                                        <i class="fas fa-star"></i> {{ medicine.avg_rating|floatformat:1 }}/5
+                                                    </span>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ medicine.ratings_count }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">No rated medicines yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Placeholder -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">Donations per Month</h5>
+                </div>
+                <div class="card-body">
+                    {% if donations_per_month %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Donations Completed</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in donations_per_month %}
+                                        <tr>
+                                            <td>{{ record.month }}</td>
+                                            <td>
+                                                <span class="badge bg-success">{{ record.count }}</span>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">No donation data available yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Note -->
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="alert alert-info" role="alert">
+                <i class="fas fa-info-circle"></i>
+                <strong>Chart.js Integration Note:</strong> To add interactive charts and graphs, install Chart.js library 
+                and uncomment the chart code in the template. Data is ready for visualization.
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+</style>
+
+<!-- Optional: Chart.js Integration -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Uncomment below for chart visualization
+    // const ctx = document.getElementById('donationsChart').getContext('2d');
+    // const chart = new Chart(ctx, {
+    //     type: 'line',
+    //     data: {
+    //         labels: {{ donations_per_month|safe }},
+    //         datasets: [{
+    //             label: 'Donations Completed',
+    //             data: {{ donations_per_month|safe }},
+    //             borderColor: '#10b981',
+    //             backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    //             tension: 0.4
+    //         }]
+    //     }
+    // });
+</script>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}Messages - MedShare{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 30px auto;">
+    <div class="card app-card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-envelope"></i> Messages</h2>
+            <p style="color: #666; margin-top: 8px; font-size: 14px;">Conversations about medicine donations</p>
+        </div>
+
+        {% if conversations %}
+            <div style="padding: 20px;">
+                {% for conv in conversations %}
+                    <div style="padding: 16px; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s;">
+                        <a href="{% url 'message_detail' conv.id %}" style="flex: 1; text-decoration: none; color: inherit;">
+                            <div>
+                                <h5 style="margin: 0 0 4px 0;">
+                                    <i class="fas fa-pills"></i> {{ conv.medicine.name }} ({{ conv.medicine.quantity }} {{ conv.medicine.unit }})
+                                </h5>
+                                <p style="margin: 4px 0; color: #666; font-size: 13px;">
+                                    <strong>Chatting with:</strong> 
+                                    <span style="color: #2c5282;">
+                                        {% if user.profile.role == 'ngo' %}
+                                            Donor ({{ conv.donor.profile.get_role_display }})
+                                        {% else %}
+                                            NGO ({{ conv.ngo.profile.get_role_display }})
+                                        {% endif %}
+                                    </span>
+                                </p>
+                                <p style="margin: 4px 0; color: #999; font-size: 12px;">
+                                    Last message: {{ conv.updated_at|date:"M d, Y - H:i" }}
+                                </p>
+                            </div>
+                        </a>
+                        <div style="text-align: right;">
+                            <a href="{% url 'message_detail' conv.id %}" class="btn-primary" style="padding: 6px 12px; font-size: 13px;">
+                                Open Chat
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div style="padding: 40px; text-align: center;">
+                <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; display: block; margin-bottom: 16px;"></i>
+                <p style="color: #999;">No conversations yet.</p>
+                {% if user.profile.role == 'ngo' %}
+                    <p style="color: #999; font-size: 14px;">Search for medicines and click "Contact Donor" to start a conversation.</p>
+                    <a href="{% url 'ngo_dashboard' %}" class="btn-primary" style="padding: 8px 16px; display: inline-block; margin-top: 12px;">
+                        View Available Medicines
+                    </a>
+                {% else %}
+                    <p style="color: #999; font-size: 14px;">When NGOs request your medicines, they'll appear here.</p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

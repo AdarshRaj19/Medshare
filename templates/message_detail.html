@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Chat - MedShare{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 20px auto;">
+    <div class="card app-card">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2 class="card-title"><i class="fas fa-comments"></i> Chat</h2>
+                <p style="color: #666; margin-top: 8px; font-size: 13px;">
+                    <i class="fas fa-pills"></i> <strong>{{ medicine.name }}</strong> ({{ medicine.quantity }} {{ medicine.unit }}) 
+                    <br>
+                    <span style="color: #2c5282;">Chatting with: {{ other_user.username }} ({{ other_user_role }})</span>
+                </p>
+            </div>
+            <a href="{% url 'messages_list' %}" class="btn-secondary" style="padding: 6px 12px; font-size: 13px;">
+                <i class="fas fa-arrow-left"></i> Back to Messages
+            </a>
+        </div>
+
+        <!-- Chat Messages Container -->
+        <div id="chat-container" style="height: 400px; overflow-y: auto; padding: 20px; background: #f9f9f9; border-bottom: 1px solid #e0e0e0;">
+            {% if messages %}
+                {% for msg in messages %}
+                    <div style="margin-bottom: 16px; display: flex; {% if msg.sender == user %}flex-direction: row-reverse;{% endif %}">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: {% if msg.sender == user %}#3b82f6{% else %}#e0e0e0{% endif %}; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold; margin: 0 8px; flex-shrink: 0;">
+                            {{ msg.sender.username|slice:":1"|upper }}
+                        </div>
+                        <div style="max-width: 60%; {% if msg.sender == user %}text-align: right; margin-right: 8px;{% else %}margin-left: 8px;{% endif %}">
+                            <div style="font-size: 12px; color: #666; margin-bottom: 4px;">
+                                <strong>{{ msg.sender.username }}</strong> ({{ msg.sender.profile.get_role_display }})
+                                <span style="color: #999;"> • {{ msg.created_at|date:"H:i" }}</span>
+                            </div>
+                            {% if msg.message_type == 'location_request' %}
+                                <div style="background: #fff3cd; color: #856404; padding: 10px 12px; border-radius: 8px; border: 1px solid #ffc107; word-wrap: break-word;">
+                                    <i class="fas fa-map-marker-alt"></i> {{ msg.content }}
+                                </div>
+                            {% elif msg.message_type == 'location' %}
+                                <div class="location-message" data-lat="{{ msg.location_latitude }}" data-lon="{{ msg.location_longitude }}" style="background: {% if msg.sender == user %}#90EE90{% else %}#E8F5E9{% endif %}; color: {% if msg.sender == user %}white{% else %}#1b5e20{% endif %}; padding: 12px; border-radius: 8px; border: 1px solid {% if msg.sender == user %}#32CD32{% else %}#4CAF50{% endif %}; word-wrap: break-word; cursor: pointer;" onclick="openLocation(this)">
+                                    <div style="margin-bottom: 8px;">
+                                        <i class="fas fa-location-dot"></i> <strong>{{ msg.content }}</strong>
+                                    </div>
+                                    <div style="font-size: 12px; opacity: 0.9;">
+                                        📍 Lat: {{ msg.location_latitude|floatformat:4 }}, Lon: {{ msg.location_longitude|floatformat:4 }}
+                                    </div>
+                                    {% if msg.distance %}
+                                        <div style="font-size: 13px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,0,0,0.1);">
+                                            📏 <strong>Distance: {{ msg.distance }} km</strong>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div style="background: {% if msg.sender == user %}#3b82f6{% else %}white{% endif %}; color: {% if msg.sender == user %}white{% else %}#333{% endif %}; padding: 10px 12px; border-radius: 8px; border: 1px solid {% if msg.sender == user %}#3b82f6{% else %}#e0e0e0{% endif %}; word-wrap: break-word;">
+                                    {{ msg.content }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div style="text-align: center; color: #999; padding: 40px 20px;">
+                    <p>No messages yet. Start the conversation!</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Message Input Form -->
+        <div style="padding: 20px;">
+            <form method="POST" id="message-form">
+                {% csrf_token %}
+                <input type="hidden" name="message_type" id="message_type" value="text">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <textarea 
+                        name="content" 
+                        id="message_content"
+                        placeholder="Type your message..." 
+                        style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 14px; resize: none; height: 50px;"
+                        required
+                    ></textarea>
+                    <button type="submit" class="btn-primary" style="padding: 10px 20px; font-size: 14px;">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+
+                <!-- Location Request/Share Buttons -->
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    {% if user.profile.role == 'ngo' %}
+                        <button type="button" id="request-location-btn" class="btn-secondary" style="padding: 6px 12px; font-size: 12px;">
+                            <i class="fas fa-map-marker-alt"></i> Request Location
+                        </button>
+                    {% elif user.profile.role == 'donor' %}
+                        <button type="button" id="share-location-btn" class="btn-success" style="padding: 6px 12px; font-size: 12px;">
+                            <i class="fas fa-location-dot"></i> Share My Location
+                        </button>
+                    {% endif %}
+                </div>
+
+                <small style="color: #999; display: block; margin-top: 8px;">
+                    💡 <strong>Privacy:</strong> No phone numbers or emails are shared. Messages are only for discussing medicine donation details.
+                </small>
+            </form>
+        </div>
+
+        <!-- Info Box -->
+        <div style="background: rgba(59,130,246,0.08); padding: 12px 16px; border-left: 4px solid #3b82f6; margin-top: 0; border-top: 1px solid #e0e0e0;">
+            <p style="margin: 0; color: #0c5460; font-size: 13px;">
+                <i class="fas fa-shield-alt"></i> 
+                <strong>Safe Messaging:</strong> Your personal information is protected. Only usernames and roles are visible.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script src="http://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+    // Function to open location in Google Maps
+    function openLocation(element) {
+        const lat = element.getAttribute('data-lat');
+        const lon = element.getAttribute('data-lon');
+        if (lat && lon) {
+            // Open in Google Maps
+            window.open(`https://www.google.com/maps?q=${lat},${lon}`, '_blank');
+        }
+    }
+
+    // Auto-scroll to bottom of chat
+    const chatContainer = document.getElementById('chat-container');
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    // Request Location Button (NGO)
+    document.getElementById('request-location-btn')?.addEventListener('click', function(e){
+        e.preventDefault();
+        if (confirm('Request location from this user? They can then share their current location.')) {
+            document.getElementById('message_type').value = 'location_request';
+            document.getElementById('message_content').value = '';
+            document.getElementById('message-form').submit();
+        }
+    });
+
+    // Share Location Button (Donor)
+    const shareLocBtn = document.getElementById('share-location-btn');
+    if (shareLocBtn) {
+        shareLocBtn.addEventListener('click', function(e){
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser.');
+                return;
+            }
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting location...';
+            
+            navigator.geolocation.getCurrentPosition(function(pos){
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                
+                // Try to get location name via reverse geocoding
+                let locationName = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                
+                // Fetch location name from nominatim (OpenStreetMap)
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                    .then(resp => resp.json())
+                    .then(data => {
+                        locationName = data.address?.road || data.address?.city || data.address?.town || locationName;
+                        document.getElementById('message_type').value = 'location';
+                        document.getElementById('message_content').value = `${lat},${lng}`;
+                        
+                        // Remove any existing location_name input
+                        const existingInput = document.querySelector('input[name="location_name"]');
+                        if (existingInput) existingInput.remove();
+                        
+                        const form = document.getElementById('message-form');
+                        form.insertAdjacentHTML('beforeend', 
+                            `<input type="hidden" name="location_name" value="${locationName}">`
+                        );
+                        form.submit();
+                    })
+                    .catch((err) => {
+                        console.error('Reverse geocoding error:', err);
+                        // Fallback if reverse geocoding fails
+                        document.getElementById('message_type').value = 'location';
+                        document.getElementById('message_content').value = `${lat},${lng}`;
+                        
+                        // Remove any existing location_name input
+                        const existingInput = document.querySelector('input[name="location_name"]');
+                        if (existingInput) existingInput.remove();
+                        
+                        const form = document.getElementById('message-form');
+                        form.insertAdjacentHTML('beforeend', 
+                            `<input type="hidden" name="location_name" value="${locationName}">`
+                        );
+                        form.submit();
+                    });
+            }, function(err){
+                console.error('Geolocation error:', err);
+                shareLocBtn.disabled = false;
+                shareLocBtn.innerHTML = '<i class="fas fa-location-dot"></i> Share My Location';
+                alert('Unable to access your location. Please enable location services and try again. Error: ' + err.message);
+            }, {enableHighAccuracy: true, timeout: 10000, maximumAge: 0});
+        });
+    }
+</script>
+{% endblock %}

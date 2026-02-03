@@ -1,0 +1,1182 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}MedShare - Medicine Donation Platform{% endblock %}
+
+{% block content %}
+
+<!-- HERO CAROUSEL SECTION WITH 4 SLIDES -->
+<section class="hero-carousel-section">
+    <div class="container hero-grid">
+        <div class="hero-left">
+            <span class="eyebrow">A Medicine Donation Platform</span>
+            <h1 class="hero-head">Don't Waste, <span class="text-success">Donate</span><br/>Save Lives</h1>
+            <p class="lead">Transform unused medicines into lifesaving resources for underprivileged communities. Help NGOs and hospitals get what they need — quickly, safely, and transparently.</p>
+
+            <div class="hero-cta">
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'signup' %}" class="btn btn-primary btn-lg">Start Donating Now</a>
+                    <a href="#how-it-works" class="btn btn-outline-secondary btn-lg">Learn How It Works</a>
+                {% else %}
+                    {% if user.profile.role == "donor" %}
+                        <a href="{% url 'add_medicine' %}" class="btn btn-primary btn-lg">Donate Medicine</a>
+                        <a href="{% url 'donor_dashboard' %}" class="btn btn-outline-secondary btn-lg">My Donations</a>
+                    {% else %}
+                        <a href="{% url 'ngo_dashboard' %}" class="btn btn-primary btn-lg">Find Medicines</a>
+                        <a href="{% url 'medicines_map' %}" class="btn btn-outline-secondary btn-lg">View Map</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <div class="impact-row">
+                <div class="impact-item">
+                    <strong class="count" data-target="{{ total_medicines }}">{{ total_medicines }}</strong>
+                    <span>Medicines Donated</span>
+                </div>
+                <div class="impact-item">
+                    <strong class="count" data-target="{{ total_ngos }}">{{ total_ngos }}</strong>
+                    <span>NGOs Registered</span>
+                </div>
+                <div class="impact-item">
+                    <strong class="count" data-target="{{ total_people_helped }}">{{ total_people_helped }}</strong>
+                    <span>People Helped</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-right">
+            <div class="hero-carousel-container">
+                <div class="hero-carousel-wrapper">
+                    <div class="hero-slide active">
+                        <img src="{% static 'images/hero-donation.avif' %}" alt="Medicine Donation Illustration" class="img-fluid" />
+                    </div>
+                    <div class="hero-slide">
+                        <img src="{% static 'images/donate.webp' %}" alt="Donate Medicines" />
+                    </div>
+                    <div class="hero-slide">
+                        <img src="{% static 'images/medicine-box.jpg' %}" alt="Medicine Box" />
+                    </div>
+                    <div class="hero-slide">
+                        <img src="{% static 'images/medicine-people.jpg' %}" alt="Helping People" />
+                    </div>
+                    
+                    <!-- Carousel Controls -->
+                    <button class="carousel-control-btn prev" onclick="heroSliderPrev()">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="carousel-control-btn next" onclick="heroSliderNext()">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    
+                    <!-- Carousel Indicators -->
+                    <div class="carousel-indicators">
+                        <button class="indicator active" onclick="heroSliderGo(0)"></button>
+                        <button class="indicator" onclick="heroSliderGo(1)"></button>
+                        <button class="indicator" onclick="heroSliderGo(2)"></button>
+                        <button class="indicator" onclick="heroSliderGo(3)"></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STATISTICS -->
+<section class="stats-section">
+    <div class="dashboard">
+        <div class="stat-box stat-box-1">
+            <div class="stat-icon"><i class="fas fa-pills"></i></div>
+            <div class="stat-number">{{ total_medicines }}</div>
+            <div class="stat-label">Medicines Available</div>
+        </div>
+        <div class="stat-box stat-box-2">
+            <div class="stat-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-number">{{ total_donors }}</div>
+            <div class="stat-label">Active Donors</div>
+        </div>
+        <div class="stat-box stat-box-3">
+            <div class="stat-icon"><i class="fas fa-hospital"></i></div>
+            <div class="stat-number">{{ total_ngos }}</div>
+            <div class="stat-label">Partner NGOs</div>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURED MEDICINES -->
+{% if featured_medicines %}
+<section class="featured-section">
+    <div class="section-header">
+        <h2><i class="fas fa-star"></i> Featured Medicines</h2>
+        <p>Top available donations from verified donors</p>
+    </div>
+    <div class="medicines-grid">
+        {% for medicine in featured_medicines %}
+        <div class="card medicine-card-hover">
+            {% if medicine.image %}
+                <div class="medicine-image">
+                    <img src="{{ medicine.image.url }}" alt="{{ medicine.name }}" class="medicine-img img-fluid">
+                </div>
+            {% else %}
+                <div class="medicine-image medicine-placeholder">
+                    <i class="fas fa-pills"></i>
+                </div>
+            {% endif %}
+            
+            <h3 style="color: var(--primary); margin-top: 15px;">{{ medicine.name }}</h3>
+            
+            {% if medicine.description %}
+                <p style="color: #666; margin: 10px 0; font-size: 14px;">{{ medicine.description|truncatewords:15 }}</p>
+            {% endif %}
+            
+            <div class="medicine-meta">
+                <div class="meta-item">
+                    <span class="meta-label"><i class="fas fa-cube"></i> Qty:</span>
+                    <span class="meta-value">{{ medicine.quantity }} {{ medicine.unit }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label"><i class="fas fa-calendar"></i> Expires:</span>
+                    <span class="meta-value">{{ medicine.expiry_date|date:"M d, Y" }}</span>
+                </div>
+            </div>
+
+            {% if medicine.rating %}
+            <div class="rating" style="margin: 10px 0;">
+                <div class="stars">
+                    {% for i in "12345" %}
+                        {% if forloop.counter <= medicine.rating %}
+                            ★
+                        {% else %}
+                            ☆
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <span class="rating-count">({{ medicine.ratings_count|default:medicine.rating_count|default:0 }} reviews)</span>
+            </div>
+            {% endif %}
+
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <a href="{% url 'medicine_detail' medicine.id %}" class="btn-primary" style="flex: 1; text-align: center; padding: 10px;">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+                {% if user.is_authenticated and user.profile.role == "ngo" %}
+                <a href="{% url 'request_medicine' medicine.id %}" class="btn-secondary" style="flex: 1; text-align: center; padding: 10px;">
+                    <i class="fas fa-hand-paper"></i> Request
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if ai_recommendations %}
+<section class="featured-section" style="margin-top: 40px;">
+    <div class="section-header">
+        <h2><i class="fas fa-brain"></i> {{ ai_title|default:"AI Picks" }}</h2>
+        <p>Personalized suggestions based on activity, ratings, and urgency</p>
+    </div>
+    <div class="medicines-grid">
+        {% for medicine in ai_recommendations %}
+        <div class="card app-card medicine-card-hover">
+            {% if medicine.image %}
+                <div class="medicine-image">
+                    <img src="{{ medicine.image.url }}" alt="{{ medicine.name }}" class="medicine-img img-fluid">
+                </div>
+            {% else %}
+                <div class="medicine-image medicine-placeholder">
+                    <i class="fas fa-pills"></i>
+                </div>
+            {% endif %}
+
+            <h3 style="color: var(--primary); margin-top: 15px;">{{ medicine.name }}</h3>
+
+            <div class="medicine-meta">
+                <div class="meta-item">
+                    <span class="meta-label"><i class="fas fa-cube"></i> Qty:</span>
+                    <span class="meta-value">{{ medicine.quantity }} {{ medicine.unit }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label"><i class="fas fa-calendar"></i> Expires:</span>
+                    <span class="meta-value">{{ medicine.expiry_date|date:"M d, Y" }}</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <a href="{% url 'medicine_detail' medicine.id %}" class="btn-primary" style="flex: 1; text-align: center; padding: 10px;">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+                {% if user.is_authenticated and user.profile.role == "ngo" %}
+                <a href="{% url 'request_medicine' medicine.id %}" class="btn-secondary" style="flex: 1; text-align: center; padding: 10px;">
+                    <i class="fas fa-hand-paper"></i> Request
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- FEATURES SECTION -->
+<section class="features-section">
+    <div class="section-header">
+        <h2>Why Choose MedShare?</h2>
+        <p>Trusted by donors and NGOs across the country</p>
+    </div>
+    <div class="features">
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+            <h3>Safe & Verified</h3>
+            <p>All medicines are verified for quality and safety.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-map-marker-alt"></i></div>
+            <h3>Location-Based</h3>
+            <p>Find medicines near your location using interactive maps.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-brain"></i></div>
+            <h3>AI Powered</h3>
+            <p>Smart recommendations help find the right medicines faster.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-star"></i></div>
+            <h3>Rated & Reviewed</h3>
+            <p>Community ratings ensure medicine quality and reliability.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-clock"></i></div>
+            <h3>Real-Time Tracking</h3>
+            <p>Track donations from initiation to completion in real-time.</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+            <h3>Analytics & Reports</h3>
+            <p>Get detailed insights on donations and impact metrics.</p>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-it-works">
+    <div class="section-header">
+        <h2>How It Works</h2>
+        <p>Simple steps to get started</p>
+    </div>
+    
+    <div class="how-it-works-grid">
+        <!-- For Donors -->
+        <div class="how-step">
+            <div class="step-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <h3>Sign Up as Donor</h3>
+            <p>Create an account and set up your profile with location details.</p>
+            <span class="step-number">1</span>
+        </div>
+
+        <div class="how-step">
+            <div class="step-icon step-icon-2">
+                <i class="fas fa-pills"></i>
+            </div>
+            <h3>Add Medicines</h3>
+            <p>List unused medicines with details like expiry date.</p>
+            <span class="step-number">2</span>
+        </div>
+
+        <div class="how-step">
+            <div class="step-icon step-icon-3">
+                <i class="fas fa-handshake"></i>
+            </div>
+            <h3>Get Requests</h3>
+            <p>Receive requests from verified NGOs in your area.</p>
+            <span class="step-number">3</span>
+        </div>
+
+        <!-- For NGOs -->
+        <div class="how-step">
+            <div class="step-icon">
+                <i class="fas fa-hospital"></i>
+            </div>
+            <h3>Register as NGO</h3>
+            <p>Create an account as a healthcare NGO or hospital.</p>
+            <span class="step-number">1</span>
+        </div>
+
+        <div class="how-step">
+            <div class="step-icon step-icon-2">
+                <i class="fas fa-search"></i>
+            </div>
+            <h3>Search & Filter</h3>
+            <p>Find available medicines using our smart search.</p>
+            <span class="step-number">2</span>
+        </div>
+
+        <div class="how-step">
+            <div class="step-icon step-icon-3">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3>Request & Receive</h3>
+            <p>Send requests and receive medicines from donors.</p>
+            <span class="step-number">3</span>
+        </div>
+    </div>
+</section>
+
+<style>
+    /* HERO CAROUSEL STYLES */
+    .hero-carousel-section {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .hero-carousel-container {
+        position: relative;
+        width: 100%;
+        height: 400px;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 20px 50px rgba(16,185,129,0.15);
+    }
+
+    .hero-carousel-wrapper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+
+    .hero-slide {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: opacity 0.8s ease-in-out;
+    }
+
+    .hero-slide.active {
+        opacity: 1;
+    }
+
+    .hero-slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+    }
+
+    .carousel-control-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255,255,255,0.9);
+        color: #10b981;
+        border: 2px solid #10b981;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 18px;
+        transition: all 0.3s ease;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .carousel-control-btn:hover {
+        background: #10b981;
+        color: white;
+        transform: translateY(-50%) scale(1.1);
+        box-shadow: 0 6px 20px rgba(16,185,129,0.3);
+    }
+
+    .carousel-control-btn.prev {
+        left: 20px;
+    }
+
+    .carousel-control-btn.next {
+        right: 20px;
+    }
+
+    .carousel-indicators {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 12px;
+        z-index: 10;
+    }
+
+    .carousel-indicators .indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.6);
+        border: 2px solid rgba(255,255,255,0.8);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        padding: 0;
+    }
+
+    .carousel-indicators .indicator.active {
+        background: #10b981;
+        border-color: #10b981;
+        transform: scale(1.2);
+    }
+
+    /* HERO LANDING STYLES */
+    .hero-landing {
+        padding: 60px 0 40px;
+    }
+
+    .hero-grid {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        gap: 40px;
+        align-items: center;
+    }
+
+    .hero-left .eyebrow {
+        display: inline-block;
+        background: rgba(16,185,129,0.08);
+        color: #059669;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-weight: 600;
+        margin-bottom: 14px;
+    }
+
+    .hero-head {
+        font-size: 44px;
+        line-height: 1.05;
+        margin: 6px 0 18px;
+        font-weight: 800;
+        color: var(--dark);
+    }
+
+    .hero-left .lead {
+        color: #555;
+        max-width: 640px;
+        margin-bottom: 22px;
+        font-size: 16px;
+    }
+
+    .hero-cta a { margin-right: 12px; }
+
+    .impact-row { display:flex; gap:18px; margin-top:22px; }
+    .impact-item { background: rgba(16,185,129,0.04); padding:12px 16px; border-radius:10px; text-align:center; min-width:120px; opacity:0; transform: translateY(8px); animation: popIn 480ms cubic-bezier(.2,.9,.2,1) both; }
+    .impact-item:nth-child(1){ animation-delay:0.05s; }
+    .impact-item:nth-child(2){ animation-delay:0.12s; }
+    .impact-item:nth-child(3){ animation-delay:0.18s; }
+    .impact-item strong { display:block; font-size:18px; color:var(--primary); }
+    .impact-item span { font-size:13px; color:#666; }
+
+    .hero-right .hero-carousel-container {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 20px 50px rgba(16,185,129,0.15);
+    }
+    .hero-media { height:320px; background-image: linear-gradient(180deg, rgba(0,0,0,0.28), rgba(0,0,0,0.18)), url('{% static "images/hero-illustration.svg" %}'); background-size: cover; background-position: center; display:flex; align-items:flex-end; padding:24px; }
+    .hero-media-overlay { color:white; backdrop-filter: blur(6px); }
+    .hero-media-overlay h4 { margin:0 0 6px; font-weight:700; }
+    .hero-media-overlay p { margin:0 0 12px; opacity:0.95; }
+
+    @keyframes popIn {
+        from { opacity: 0; transform: translateY(10px) scale(.995); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @media (max-width: 900px) {
+        .hero-grid { grid-template-columns: 1fr; }
+        .hero-right { order: -1; }
+        .hero-head { font-size: 32px; }
+    }
+
+    /* Carousel Styles */
+    .hero-carousel {
+        position: relative;
+        width: 100%;
+        height: 400px;
+        overflow: hidden;
+        border-radius: 15px;
+        margin-bottom: 40px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    }
+
+    .carousel-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+
+    .carousel-slide {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: opacity 0.8s ease-in-out;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-size: cover;
+        background-position: center;
+    }
+
+    .carousel-slide.active {
+        opacity: 1;
+    }
+
+    .carousel-content {
+        text-align: center;
+        color: white;
+        z-index: 2;
+        animation: slideInUp 0.8s ease;
+    }
+
+    .carousel-title {
+        font-size: 48px;
+        font-weight: 700;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .carousel-title span {
+        color: #10b981;
+    }
+
+    .carousel-subtitle {
+        font-size: 20px;
+        color: rgba(255,255,255,0.9);
+        text-shadow: 1px 1px 4px rgba(0,0,0,0.3);
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .carousel-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255,255,255,0.8);
+        border: none;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 20px;
+        color: #10b981;
+        transition: all 0.3s ease;
+        z-index: 10;
+    }
+
+    .carousel-prev {
+        left: 20px;
+    }
+
+    .carousel-next {
+        right: 20px;
+    }
+
+    .carousel-btn:hover {
+        background: white;
+        transform: translateY(-50%) scale(1.1);
+    }
+
+    .carousel-dots {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 10px;
+        z-index: 10;
+    }
+
+    .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.5);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .dot.active {
+        background: white;
+        transform: scale(1.3);
+    }
+
+    /* Hero Content Section */
+    .hero-content {
+        text-align: center;
+        margin-bottom: 60px;
+    }
+
+    .hero-description {
+        font-size: 18px;
+        color: #666;
+        max-width: 700px;
+        margin: 0 auto 30px;
+        line-height: 1.8;
+    }
+
+    /* Stats Section */
+    .stats-section {
+        margin: 60px 0;
+        padding: 40px;
+        background: linear-gradient(135deg, rgba(16,185,129,0.05) 0%, rgba(59,130,246,0.05) 100%);
+        border-radius: 15px;
+    }
+
+    .stat-box-1 {
+        border-left-color: #10b981 !important;
+    }
+
+    .stat-box-2 {
+        border-left-color: #3b82f6 !important;
+    }
+
+    .stat-box-3 {
+        border-left-color: #f39c12 !important;
+    }
+
+    .stat-icon {
+        font-size: 32px;
+        color: var(--primary);
+        margin-bottom: 10px;
+    }
+
+    /* Featured Section */
+    .featured-section {
+        margin: 80px 0;
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: 50px;
+    }
+
+    .section-header h2 {
+        font-size: 36px;
+        color: var(--dark);
+        margin-bottom: 10px;
+        font-weight: 700;
+    }
+
+    .section-header p {
+        font-size: 16px;
+        color: #666;
+    }
+
+    .medicines-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 25px;
+    }
+
+    .medicine-card-hover {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .medicine-card-hover:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 40px rgba(16,185,129,0.2);
+    }
+
+    .medicine-placeholder {
+        background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .medicine-placeholder i {
+        font-size: 60px;
+        opacity: 0.8;
+    }
+
+    .medicine-img {
+        transition: transform 0.3s ease;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .medicine-card-hover:hover .medicine-img {
+        transform: scale(1.08);
+    }
+
+    /* Features Section */
+    .features-section {
+        margin: 80px 0;
+        padding: 60px 0;
+        background: #f8f9fa;
+        border-radius: 15px;
+        margin-left: -20px;
+        margin-right: -20px;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 28px;
+    }
+
+    .feature-card {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .feature-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #10b981, #3b82f6, #f39c12);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .feature-card:hover::before {
+        opacity: 1;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 30px rgba(16,185,129,0.15);
+    }
+
+    .feature-icon {
+        font-size: 40px;
+        color: white;
+        margin-bottom: 15px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 80px;
+        height: 80px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        transition: all 0.3s ease;
+    }
+
+    .feature-card:nth-child(2) .feature-icon {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+
+    .feature-card:nth-child(3) .feature-icon {
+        background: linear-gradient(135deg, #f39c12 0%, #d68910 100%);
+    }
+
+    .feature-card:nth-child(4) .feature-icon {
+        background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+    }
+
+    .feature-card:nth-child(5) .feature-icon {
+        background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    }
+
+    .feature-card:nth-child(6) .feature-icon {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    }
+
+    .feature-card:hover .feature-icon {
+        transform: scale(1.15) rotate(-5deg);
+    }
+
+    .feature-card h3 {
+        color: var(--dark);
+        font-weight: 700;
+        margin: 16px 0 10px;
+        font-size: 18px;
+    }
+
+    .feature-card p {
+        color: #666;
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    /* How It Works Section */
+    .how-it-works {
+        margin: 80px 0;
+    }
+
+    .how-it-works-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 30px;
+    }
+
+    .how-step {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .how-step::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(16,185,129,0.08), transparent);
+        transition: all 0.3s ease;
+    }
+
+    .how-step:nth-child(2)::before {
+        background: radial-gradient(circle, rgba(59,130,246,0.08), transparent);
+    }
+
+    .how-step:nth-child(3)::before {
+        background: radial-gradient(circle, rgba(243,156,18,0.08), transparent);
+    }
+
+    .how-step:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+    }
+
+    .how-step:hover::before {
+        top: -40%;
+        right: -40%;
+    }
+
+    .step-number {
+        position: absolute;
+        top: -15px;
+        right: -15px;
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+    .step-icon {
+        font-size: 50px;
+        color: white;
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        transition: all 0.3s ease;
+    }
+
+    .step-icon-2 {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+
+    .step-icon-3 {
+        background: linear-gradient(135deg, #f39c12 0%, #d68910 100%);
+    }
+
+    .how-step:hover .step-icon {
+        transform: scale(1.1) rotate(10deg);
+    }
+
+    .how-step h3 {
+        color: var(--dark);
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .how-step p {
+        color: #666;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+        .carousel-title {
+            font-size: 32px;
+        }
+
+        .carousel-subtitle {
+            font-size: 16px;
+        }
+
+        .carousel-slide {
+            height: 250px;
+        }
+
+        .hero-carousel {
+            height: 250px;
+        }
+
+        .section-header h2 {
+            font-size: 28px;
+        }
+    }
+</style>
+
+<script>
+    let currentSlideIndex = 0;
+    const slides = document.querySelectorAll('.carousel-slide');
+    const dots = document.querySelectorAll('.dot');
+    let slideTimer;
+
+    function showSlide(n) {
+        slides.forEach(slide => slide.classList.remove('active'));
+        dots.forEach(dot => dot.classList.remove('active'));
+
+        if (n >= slides.length) currentSlideIndex = 0;
+        if (n < 0) currentSlideIndex = slides.length - 1;
+
+        if (slides[currentSlideIndex]) {
+            slides[currentSlideIndex].classList.add('active');
+        }
+        if (dots[currentSlideIndex]) {
+            dots[currentSlideIndex].classList.add('active');
+        }
+    }
+
+    function nextSlide() {
+        currentSlideIndex++;
+        showSlide(currentSlideIndex);
+        resetTimer();
+    }
+
+    function prevSlide() {
+        currentSlideIndex--;
+        showSlide(currentSlideIndex);
+        resetTimer();
+    }
+
+    function currentSlide(n) {
+        currentSlideIndex = n;
+        showSlide(currentSlideIndex);
+        resetTimer();
+    }
+
+    function autoSlide() {
+        currentSlideIndex++;
+        showSlide(currentSlideIndex);
+    }
+
+    function resetTimer() {
+        clearInterval(slideTimer);
+        slideTimer = setInterval(autoSlide, 5000);
+    }
+
+    // Initialize
+    showSlide(currentSlideIndex);
+    slideTimer = setInterval(autoSlide, 5000);
+</script>
+
+<script>
+    // Count-up animation for impact items
+    (function(){
+        function animateCount(el, target, duration){
+            target = parseInt(target,10) || 0;
+            var start = 0;
+            var startTime = null;
+
+            function step(timestamp){
+                if (!startTime) startTime = timestamp;
+                var progress = Math.min((timestamp - startTime) / duration, 1);
+                var value = Math.floor(progress * (target - start) + start);
+                el.textContent = value.toLocaleString();
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            }
+            window.requestAnimationFrame(step);
+        }
+
+        function runWhenVisible(el, cb){
+            var rect = el.getBoundingClientRect();
+            if (rect.top < window.innerHeight) { cb(); return; }
+            function onScroll(){
+                var r = el.getBoundingClientRect();
+                if (r.top < window.innerHeight){
+                    window.removeEventListener('scroll', onScroll);
+                    cb();
+                }
+            }
+            window.addEventListener('scroll', onScroll);
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            var counters = document.querySelectorAll('.count');
+            counters.forEach(function(c){
+                var target = c.getAttribute('data-target') || '0';
+                runWhenVisible(c, function(){ animateCount(c, target, 900); });
+            });
+        });
+    })();
+</script>
+
+<script>
+    // Hero Carousel Controls
+    let currentHeroSlide = 0;
+    const heroSlides = document.querySelectorAll('.hero-slide');
+    const heroIndicators = document.querySelectorAll('.carousel-indicators .indicator');
+
+    function showHeroSlide(n){
+        heroSlides.forEach(slide => slide.classList.remove('active'));
+        heroIndicators.forEach(ind => ind.classList.remove('active'));
+
+        if (n >= heroSlides.length) currentHeroSlide = 0;
+        if (n < 0) currentHeroSlide = heroSlides.length - 1;
+
+        if (heroSlides[currentHeroSlide]) {
+            heroSlides[currentHeroSlide].classList.add('active');
+        }
+        if (heroIndicators[currentHeroSlide]) {
+            heroIndicators[currentHeroSlide].classList.add('active');
+        }
+    }
+
+    function heroSliderNext(){
+        currentHeroSlide++;
+        showHeroSlide(currentHeroSlide);
+    }
+
+    function heroSliderPrev(){
+        currentHeroSlide--;
+        showHeroSlide(currentHeroSlide);
+    }
+
+    function heroSliderGo(n){
+        currentHeroSlide = n;
+        showHeroSlide(currentHeroSlide);
+    }
+
+    // Auto-advance slides every 8 seconds
+    setInterval(function(){
+        heroSliderNext();
+    }, 8000);
+</script>
+
+<!-- TESTIMONIALS SECTION -->
+<section class="testimonials-section py-5 bg-light">
+    <div class="container">
+        <div class="section-header text-center mb-5">
+            <h2><i class="fas fa-heart text-success"></i> Success Stories</h2>
+            <p class="lead text-muted">Hear from our community members</p>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text">
+                            "MedShare helped us provide medicines to over 100 families in our community. It's a life-changing platform!"
+                        </p>
+                        <footer class="blockquote-footer">
+                            <strong>NGO Manager</strong> - Delhi
+                        </footer>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text">
+                            "Instead of throwing away unused medicines, I can now donate them and help others. Best feeling ever!"
+                        </p>
+                        <footer class="blockquote-footer">
+                            <strong>Medicine Donor</strong> - Mumbai
+                        </footer>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                            <i class="fas fa-star text-warning"></i>
+                        </div>
+                        <p class="card-text">
+                            "The platform is easy to use and the verification process ensures we get quality medicines only."
+                        </p>
+                        <footer class="blockquote-footer">
+                            <strong>Hospital Administrator</strong> - Bangalore
+                        </footer>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'testimonials' %}" class="btn btn-success me-2">
+                <i class="fas fa-heart"></i> View All Stories
+            </a>
+            <a href="{% url 'add_testimonial' %}" class="btn btn-outline-success">
+                <i class="fas fa-pen"></i> Share Your Story
+            </a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

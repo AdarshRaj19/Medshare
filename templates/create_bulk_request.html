@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+	<h2>Create Bulk Donation Request</h2>
+	<form method="post" class="mb-4">
+		{% csrf_token %}
+		<div class="mb-3">
+			<label for="title" class="form-label">Title</label>
+			<input type="text" class="form-control" id="title" name="title" required maxlength="100" placeholder="Request Title">
+		</div>
+		<div class="mb-3">
+			<label for="description" class="form-label">Description</label>
+			<textarea class="form-control" id="description" name="description" rows="3" required minlength="10" maxlength="1000" placeholder="Describe your bulk medicine needs"></textarea>
+		</div>
+		<div class="mb-3">
+			<label for="priority" class="form-label">Priority</label>
+			<select class="form-select" id="priority" name="priority">
+				<option value="medium" selected>Medium</option>
+				<option value="low">Low</option>
+				<option value="high">High</option>
+				<option value="urgent">Urgent</option>
+			</select>
+		</div>
+		<button type="submit" class="btn btn-primary">Create Bulk Request</button>
+	</form>
+	<div class="alert alert-info">
+		After creating a bulk request, you can add individual medicine items to it.
+	</div>
+</div>
+{% endblock %}

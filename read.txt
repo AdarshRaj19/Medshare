@@ -1,0 +1,64 @@
+Username (leave blank to use 'admin'): admin
+Email address: admin1234@gmail.com
+Password: admin1234
+Password (again): admin1234
+Superuser created successfully.
+
+(.venv) PS F:\Projects\Medshare> f:\Projects\Medshare\.venv\Scripts\python manage.py populate_data
+Creating sample data...
+Sample data created successfully!
+Created 4 donors
+Created 4 NGOs
+Created 10 medicines
+
+Test Accounts:
+Admin: username=admin, password=admin123
+Donor: username=john_smith, password=password123
+NGO: username=red_cross, password=password123
+(.venv) PS F:\Projects\Medshare> f:\Projects\Medshare\.venv\Scripts\python manage.py populate_data 
+2>&1
+Creating sample data...
+Sample data created successfully!
+Created 4 donors
+Created 4 NGOs
+Created 10 medicines
+
+Test Accounts:
+Admin: username=admin, password=admin123
+Donor: username=john_smith, password=password123
+NGO: username=red_cross, password=password123
+(.venv) PS F:\Projects\Medshare> python manage.py runserver
+
+Try logging in with:
+
+Donor: john_smith / password123
+Srajput
+NGO: red_cross / password123
+Admin: admin / admin123
+
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python manage.py makemigrations
+python manage.py migrate
+python manage.py runserver 
+
+
+
+python manage.py createsuperuser
+
+
+Test Accounts:
+Admin: username=admin, password=admin123
+Donor: username=john_smith, password=password123
+NGO: username=red_cross, password=password123
+
+
+
+
+save all things from another
+
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python manage.py makemigrations
+python manage.py migrate
+python manage.py runserver 

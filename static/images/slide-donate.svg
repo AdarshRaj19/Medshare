@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="420" height="320" viewBox="0 0 420 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  <rect width="420" height="320" fill="url(#grad1)" opacity="0.1"/>
+  
+  <!-- Hand holding medicine bottle -->
+  <g transform="translate(100, 80)">
+    <!-- Arm -->
+    <path d="M 60 80 Q 80 60 100 40" stroke="#10b981" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <!-- Hand -->
+    <circle cx="100" cy="35" r="12" fill="#fdbcb4"/>
+    <!-- Fingers -->
+    <path d="M 90 25 Q 85 15 85 8" stroke="#fdbcb4" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M 110 25 Q 115 15 115 8" stroke="#fdbcb4" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Medicine bottle -->
+  <g transform="translate(160, 60)">
+    <rect x="0" y="0" width="50" height="90" rx="8" fill="#white" stroke="#10b981" stroke-width="2"/>
+    <rect x="5" y="5" width="40" height="50" fill="#e0f2fe" opacity="0.6"/>
+    <rect x="15" y="-8" width="20" height="15" rx="3" fill="#10b981"/>
+    <circle cx="25" cy="-5" r="8" fill="#059669"/>
+  </g>
+
+  <!-- Heart icon -->
+  <g transform="translate(80, 180)">
+    <path d="M 20 5 L 30 15 L 20 25 L 10 15 Z" fill="#ec4899" opacity="0.8"/>
+    <path d="M 40 5 L 50 15 L 40 25 L 30 15 Z" fill="#f43f5e" opacity="0.8"/>
+  </g>
+
+  <!-- Plus signs -->
+  <g transform="translate(280, 140)">
+    <line x1="0" y1="20" x2="40" y2="20" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+    <line x1="20" y1="0" x2="20" y2="40" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Decorative circles -->
+  <circle cx="50" cy="280" r="8" fill="#10b981" opacity="0.3"/>
+  <circle cx="370" cy="50" r="6" fill="#3b82f6" opacity="0.2"/>
+  <circle cx="350" cy="280" r="10" fill="#f39c12" opacity="0.25"/>
+</svg>

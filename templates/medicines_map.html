@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Medicine Map - MedShare{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<style>
+    #map {
+        width: 100%;
+        height: 600px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .medicine-popup {
+        width: 300px;
+    }
+    
+    .medicine-popup h3 {
+        color: var(--primary);
+        margin: 0 0 10px 0;
+        font-size: 16px;
+    }
+    
+    .medicine-popup p {
+        margin: 5px 0;
+        font-size: 13px;
+        color: #666;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 40px auto;">
+    <h1 style="color: var(--dark); margin-bottom: 30px;">
+        <i class="fas fa-map"></i> Find Medicines Near You
+    </h1>
+
+    <div class="card app-card">
+        <div id="map"></div>
+    </div>
+
+    {{ medicine_markers|json_script:"medicine-markers" }}
+
+    {% if medicines %}
+    <div style="margin-top: 30px;">
+        <h2 style="color: var(--dark); margin-bottom: 20px;">Available Medicines on Map</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+            {% for medicine in medicines %}
+            <div class="card app-card">
+                <h3 style="color: var(--primary); margin: 0 0 10px 0;">{{ medicine.name }}</h3>
+                <p style="color: #666; font-size: 13px; margin: 10px 0;">
+                    <i class="fas fa-map-marker-alt"></i> {{ medicine.location_name|default:"Location not specified" }}
+                </p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
+                    <div>
+                        <span style="color: #999;">Quantity:</span>
+                        <span style="color: var(--dark); font-weight: bold;">{{ medicine.quantity }} {{ medicine.unit }}</span>
+                    </div>
+                    <div>
+                        <span style="color: #999;">Expires:</span>
+                        <span style="color: var(--dark); font-weight: bold;">{{ medicine.expiry_date|date:"M d, Y" }}</span>
+                    </div>
+                </div>
+                <a href="{% url 'medicine_detail' medicine.id %}" class="btn-primary" style="width: 100%; text-align: center; padding: 10px; margin-top: 15px; display: block;">
+                    <i class="fas fa-eye"></i> View Details
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card app-card" style="text-align: center; padding: 60px;">
+        <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+        <h3 style="color: #999;">No medicines with location data</h3>
+    </div>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+    // Initialize map safely
+    let map;
+    try {
+        map = L.map('map').setView([22.5937, 78.9629], 5); // Center on India by default
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        const markers = JSON.parse(document.getElementById('medicine-markers').textContent || '[]');
+        const bounds = L.latLngBounds();
+        let markerCount = 0;
+        for (const med of markers) {
+            if (med.latitude == null || med.longitude == null) continue;
+            const marker = L.marker([med.latitude, med.longitude]).addTo(map);
+            const expiry = med.expiry_date ? new Date(med.expiry_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' }) : '';
+            const locationName = med.location_name || "Not specified";
+            const popupContent = `
+                <div class="medicine-popup">
+                    <h3>${med.name}</h3>
+                    <p><strong>Quantity:</strong> ${med.quantity} ${med.unit}</p>
+                    <p><strong>Expires:</strong> ${expiry}</p>
+                    <p><strong>Location:</strong> ${locationName}</p>
+                    <p style="margin-top: 10px;">
+                        <a href="/medicine/${med.id}/" style="color: var(--primary); text-decoration: none;">
+                            View Details →
+                        </a>
+                    </p>
+                </div>
+            `;
+            marker.bindPopup(popupContent);
+            bounds.extend([med.latitude, med.longitude]);
+            markerCount++;
+        }
+        // Fit map bounds if there are markers, else center on India
+        if (markerCount > 0 && bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [50, 50] });
+        } else {
+            map.setView([22.5937, 78.9629], 5); // fallback to India
+        }
+    } catch (e) {
+        document.getElementById('map').innerHTML = '<div style="color: #c00; padding: 40px; text-align: center;">Map could not be loaded. Please try again later.</div>';
+    }
+</script>
+{% endblock %}
+{% endblock %}

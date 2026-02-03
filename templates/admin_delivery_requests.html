@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Delivery Requests - Admin{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 40px auto;">
+    <h1 style="margin-bottom:20px;">Delivery Requests (Porter)</h1>
+
+    <table style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align:left; border-bottom: 2px solid #eee;">
+                <th style="padding:10px;">ID</th>
+                <th style="padding:10px;">Medicine</th>
+                <th style="padding:10px;">Requester</th>
+                <th style="padding:10px;">Status</th>
+                <th style="padding:10px;">Partner</th>
+                <th style="padding:10px;">Tracking Link</th>
+                <th style="padding:10px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for dr in delivery_requests %}
+            <tr style="border-bottom:1px solid #f1f1f1;">
+                <td style="padding:10px; vertical-align:top;">#{{ dr.id }}</td>
+                <td style="padding:10px; vertical-align:top;">{{ dr.pickup_delivery.medicine.name }}</td>
+                <td style="padding:10px; vertical-align:top;">{{ dr.requester.get_full_name|default:dr.requester.username }}</td>
+                <td style="padding:10px; vertical-align:top;">{{ dr.get_status_display }}</td>
+                <td style="padding:10px; vertical-align:top;">
+                    <form method="POST" style="display:flex; gap:8px; align-items:center;">
+                        {% csrf_token %}
+                        <input type="hidden" name="dr_id" value="{{ dr.id }}">
+                        <select name="partner_id" style="padding:8px;">
+                            <option value="">-- Select partner --</option>
+                            {% for p in partners %}
+                                <option value="{{ p.id }}" {% if dr.porter_partner and dr.porter_partner.id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                            {% endfor %}
+                        </select>
+                </td>
+                <td style="padding:10px; vertical-align:top;">
+                    <input type="url" name="external_tracking_link" value="{{ dr.external_tracking_link|default:'' }}" placeholder="https://..." style="width:100%; padding:8px;">
+                </td>
+                <td style="padding:10px; vertical-align:top;">
+                    <select name="status" style="padding:8px; margin-bottom:6px;">
+                        {% for key,label in dr.STATUS_CHOICES %}
+                            <option value="{{ key }}" {% if dr.status == key %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn-primary" style="display:block; margin-top:6px; padding:8px;">Save</button>
+                    </form>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="padding:20px;">No delivery requests found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

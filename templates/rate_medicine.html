@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rate Medicine - MedShare{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 40px auto;">
+    <div class="card app-card">
+
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="fas fa-star"></i> Rate {{ medicine.name }}
+            </h2>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <!-- Rating -->
+            <div class="form-group">
+                <label class="form-label">How would you rate this medicine?</label>
+
+                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 15px;">
+                    {% for radio in form.rating %}
+                    <label class="rating-box">
+
+                        {{ radio.tag }}
+
+                        <div style="color: #ffc107; font-size: 24px; margin: 10px 0;">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= radio.choice_value %}
+                                    ★
+                                {% else %}
+                                    ☆
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <div style="color: #666; font-size: 12px;">
+                            {{ radio.choice_label }}
+                        </div>
+
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Review -->
+            <div class="form-group">
+                <label class="form-label" for="id_review">
+                    Your Review (Optional)
+                </label>
+                {{ form.review }}
+                <small style="color: #999;">
+                    Share your experience with this medicine
+                </small>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn-primary" style="width: 100%; padding: 14px;">
+                <i class="fas fa-check"></i> Submit Review
+            </button>
+        </form>
+    </div>
+</div>
+
+<style>
+    input[type="radio"] {
+        display: none;
+    }
+
+    .rating-box {
+        text-align: center;
+        cursor: pointer;
+        padding: 20px;
+        border: 2px solid #eee;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .rating-box:hover {
+        border-color: #2ecc71;
+    }
+
+    .rating-box:has(input[type="radio"]:checked) {
+        border-color: #2ecc71;
+        background: rgba(46, 204, 113, 0.1);
+    }
+</style>
+{% endblock %}

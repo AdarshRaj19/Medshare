@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulk Request Matches - MedShare{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 40px auto;">
+    <a href="{% url 'bulk_requests' %}" style="color: var(--primary); text-decoration: none; margin-bottom: 20px; display: inline-block;">
+        <i class="fas fa-arrow-left"></i> Back to Requests
+    </a>
+
+    <div class="card app-card">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-list"></i> Matching Medicines for: {{ bulk_request.title }}</h2>
+        </div>
+
+        <!-- Request Status -->
+        <div style="margin-bottom: 25px; padding: 15px; background: #f0f7ff; border-left: 4px solid #3b82f6; border-radius: 8px;">
+            <p style="margin: 0; color: #1e40af; font-size: 14px;">
+                <strong>Request Status:</strong> {{ bulk_request.get_status_display }}
+            </p>
+            <p style="margin: 8px 0 0; color: #1e40af; font-size: 14px;">
+                <strong>Items to Fulfill:</strong> {{ bulk_request.items.count }}
+            </p>
+        </div>
+
+        <!-- Matches by Item -->
+        {% if matches %}
+            {% for item_id, medicines in matches.items %}
+                {% with item=bulk_request.items.get|default:"" %}
+                    <div style="margin-bottom: 30px; padding: 20px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+                        <h3 style="color: var(--dark); margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-pill" style="color: #3b82f6;"></i>
+                            {{ item.medicine_name }}
+                        </h3>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;">
+                            {% if medicines %}
+                                {% for medicine in medicines %}
+                                    <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd; display: flex; flex-direction: column; gap: 10px;">
+                                        <!-- Medicine Name -->
+                                        <a href="{% url 'medicine_detail' medicine.id %}" style="color: var(--primary); font-weight: 600; text-decoration: none; display: block;">
+                                            {{ medicine.name }}
+                                        </a>
+
+                                        <!-- Details -->
+                                        <div style="font-size: 13px; color: #666;">
+                                            <p style="margin: 4px 0;"><strong>Donor:</strong> {{ medicine.donor.get_full_name|default:medicine.donor.username }}</p>
+                                            <p style="margin: 4px 0;"><strong>Available:</strong> {{ medicine.quantity }} {{ medicine.unit }}</p>
+                                            <p style="margin: 4px 0;"><strong>Expiry:</strong> {{ medicine.expiry_date|date:"M d, Y" }}</p>
+                                        </div>
+
+                                        <!-- Rating -->
+                                        {% if medicine.avg_rating %}
+                                            <div style="font-size: 13px;">
+                                                <i class="fas fa-star" style="color: #fbbf24;"></i> 
+                                                <strong>{{ medicine.avg_rating|floatformat:1 }}</strong> 
+                                                <span style="color: #999;">({{ medicine.ratings_count }} reviews)</span>
+                                            </div>
+                                        {% endif %}
+
+                                        <!-- Status Badge -->
+                                        <div style="padding: 8px; background: {% if medicine.status == 'available' %}#dcfce7{% elif medicine.status == 'donated' %}#fee2e2{% else %}#fef3c7{% endif %}; border-radius: 6px; text-align: center; font-size: 12px; color: {% if medicine.status == 'available' %}#166534{% elif medicine.status == 'donated' %}#991b1b{% else %}#92400e{% endif %}; font-weight: 600;">
+                                            {{ medicine.get_status_display|upper }}
+                                        </div>
+
+                                        <!-- Action Button -->
+                                        <a href="{% url 'medicine_detail' medicine.id %}" class="btn-primary" style="padding: 8px; text-align: center; text-decoration: none; border-radius: 6px; font-size: 13px;">
+                                            <i class="fas fa-arrow-right"></i> View & Request
+                                        </a>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div style="grid-column: 1 / -1; padding: 30px; text-align: center; color: #999;">
+                                    <i class="fas fa-search" style="font-size: 32px; margin-bottom: 10px; display: block;"></i>
+                                    <p style="margin: 0;">No matching medicines found for this request.</p>
+                                    <p style="margin: 8px 0 0; font-size: 13px;">Check back later or modify your bulk request.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endwith %}
+            {% endfor %}
+        {% else %}
+            <div style="padding: 50px 20px; text-align: center; color: #999;">
+                <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 15px; display: block;"></i>
+                <p style="margin: 0; font-size: 18px;">No items to match in this bulk request.</p>
+                <p style="margin: 10px 0 0; font-size: 14px;">The bulk request may have been fully fulfilled or there are no pending items.</p>
+            </div>
+        {% endif %}
+
+        <!-- Info Box -->
+        <div style="margin-top: 30px; padding: 15px; background: #f0f7ff; border-left: 4px solid #3b82f6; border-radius: 8px;">
+            <p style="margin: 0; color: #1e40af; font-size: 13px;">
+                <i class="fas fa-info-circle"></i>
+                <strong>Note:</strong> These are suggested matches based on medicine category and name similarity. 
+                Click on any medicine to view full details and submit a donation request.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Chat History - MedShare{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="fas fa-history"></i> Your Chat History</h4>
+                        <a href="{% url 'medicine_chatbot' %}" class="btn btn-sm btn-light">
+                            <i class="fas fa-comments"></i> Back to Chat
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    {% if chat_history %}
+                        <div id="chat-history-container">
+                            {% for message in chat_history %}
+                            <div class="chat-message-group mb-4 pb-3 border-bottom">
+                                <div class="row">
+                                    <!-- User Question -->
+                                    <div class="col-md-12 mb-3">
+                                        <div class="d-flex">
+                                            <div class="me-3">
+                                                <i class="fas fa-user-circle text-primary" style="font-size: 2rem;"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1 text-primary">Your Question</h6>
+                                                <p class="mb-1 bg-light p-3 rounded">{{ message.message }}</p>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-clock"></i> 
+                                                    {{ message.created_at|date:"M d, Y - g:i A" }}
+                                                </small>
+                                                {% if message.medicine %}
+                                                <div class="mt-2">
+                                                    <span class="badge bg-secondary">
+                                                        <i class="fas fa-pills"></i> {{ message.medicine.name }}
+                                                    </span>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- AI Response -->
+                                    <div class="col-md-12">
+                                        <div class="d-flex">
+                                            <div class="me-3">
+                                                <i class="fas fa-robot text-success" style="font-size: 2rem;"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1 text-success">AI Response</h6>
+                                                <p class="mb-1 bg-light p-3 rounded">{{ message.response }}</p>
+                                                {% if message.helpful != None %}
+                                                <small class="text-muted">
+                                                    <i class="fas fa-check-circle"></i>
+                                                    Marked as {% if message.helpful %}Helpful{% else %}Not Helpful{% endif %}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Pagination Info -->
+                        <div class="alert alert-info mt-4" role="alert">
+                            <small>
+                                Showing the last 50 chat messages. Total conversations: {{ chat_history|length }}
+                            </small>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-danger" onclick="exportChatHistory()">
+                                <i class="fas fa-download"></i> Export as PDF
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" onclick="printChatHistory()">
+                                <i class="fas fa-print"></i> Print
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" onclick="clearAllHistory()">
+                                <i class="fas fa-trash"></i> Clear All
+                            </button>
+                        </div>
+
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No chat history yet. Start a conversation!</p>
+                            <a href="{% url 'medicine_chatbot' %}" class="btn btn-primary">
+                                <i class="fas fa-comments"></i> Go to Chatbot
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Statistics Card -->
+            {% if chat_history %}
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Chat Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-primary">{{ chat_history|length }}</h3>
+                                <p class="text-muted">Total Conversations</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-success" id="helpful-count">0</h3>
+                                <p class="text-muted">Helpful Responses</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-warning" id="unhelpful-count">0</h3>
+                                <p class="text-muted">Unhelpful Responses</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h3 class="text-info" id="medicines-count">0</h3>
+                                <p class="text-muted">Unique Medicines</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-message-group {
+    animation: slideIn 0.3s ease-in;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.chat-message-group:hover {
+    background-color: #f9f9f9;
+}
+
+@media print {
+    .btn, .alert, .card-header {
+        display: none !important;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    calculateStatistics();
+});
+
+function calculateStatistics() {
+    const messages = document.querySelectorAll('.chat-message-group');
+    let helpfulCount = 0;
+    let unhelpfulCount = 0;
+    let medicinesSet = new Set();
+
+    messages.forEach(msg => {
+        const helpfulText = msg.querySelector('small')?.textContent || '';
+        if (helpfulText.includes('Helpful') && !helpfulText.includes('Not Helpful')) {
+            helpfulCount++;
+        } else if (helpfulText.includes('Not Helpful')) {
+            unhelpfulCount++;
+        }
+
+        const medicineBadge = msg.querySelector('.badge');
+        if (medicineBadge) {
+            medicinesSet.add(medicineBadge.textContent.trim());
+        }
+    });
+
+    document.getElementById('helpful-count').textContent = helpfulCount;
+    document.getElementById('unhelpful-count').textContent = unhelpfulCount;
+    document.getElementById('medicines-count').textContent = medicinesSet.size;
+}
+
+function exportChatHistory() {
+    alert('Export feature coming soon! PDF export will be available in the next update.');
+}
+
+function printChatHistory() {
+    window.print();
+}
+
+function clearAllHistory() {
+    if (confirm('Are you sure you want to clear all chat history? This action cannot be undone.')) {
+        fetch('{% url "clear_chat_history" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Chat history cleared successfully.');
+                location.reload();
+            } else {
+                alert('Error clearing chat history.');
+            }
+        })
+        .catch(error => {
+            alert('Error: ' + error.message);
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Medicine Search - MedShare{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 40px auto;">
+    <div style="margin-bottom: 30px;">
+        <h1 style="color: var(--dark); margin-bottom: 20px;">
+            <i class="fas fa-search"></i> Search Medicines
+        </h1>
+
+        <!-- Advanced Search -->
+        <div class="card app-card">
+            <form method="GET">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; align-items: flex-end;">
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" for="id_query">Search</label>
+                        {{ form.query }}
+                    </div>
+
+                    <div class="form-group" style="margin: 0;">
+                        <label class="form-label" for="id_rating_min">Minimum Rating</label>
+                        {{ form.rating_min }}
+                    </div>
+
+                    <div class="form-check" style="padding-top: 32px;">
+                        {{ form.expiring_soon }}
+                        <label style="cursor: pointer; margin: 0;">Show expiring soon (within 30 days)</label>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="padding: 12px 20px; height: 44px;">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results -->
+    {% if medicines %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px;">
+            {% for medicine in medicines %}
+            <div class="card app-card">
+                {% if medicine.image %}
+                    <div class="medicine-image" style="height: 180px; margin: -20px -20px 15px -20px; border-radius: 10px 10px 0 0;">
+                        <img src="{{ medicine.image.url }}" alt="{{ medicine.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                {% else %}
+                    <div class="medicine-image" style="height: 180px; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; margin: -20px -20px 15px -20px; border-radius: 10px 10px 0 0;">
+                        <i class="fas fa-pills" style="font-size: 50px;"></i>
+                    </div>
+                {% endif %}
+
+                <h3 style="color: var(--primary); margin: 0 0 10px 0;">{{ medicine.name }}</h3>
+
+                {% if medicine.description %}
+                    <p style="color: #666; font-size: 13px; margin: 10px 0;">{{ medicine.description|truncatewords:20 }}</p>
+                {% endif %}
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 13px; padding: 12px 0; border-top: 1px solid #eee;">
+                    <div>
+                        <span class="meta-label"><i class="fas fa-cube"></i> Qty:</span>
+                        <span class="meta-value">{{ medicine.quantity }} {{ medicine.unit }}</span>
+                    </div>
+                    <div>
+                        <span class="meta-label"><i class="fas fa-calendar"></i> Expires:</span>
+                        <span class="meta-value">{{ medicine.expiry_date|date:"M d, Y" }}</span>
+                    </div>
+                </div>
+
+                {% if medicine.avg_rating %}
+                <div class="rating" style="margin: 10px 0; justify-content: space-between;">
+                    <div class="stars">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= medicine.avg_rating %}★{% else %}☆{% endif %}
+                        {% endfor %}
+                    </div>
+                    <span class="rating-count">({{ medicine.ratings_count|default:medicine.rating_count|default:0 }})</span>
+                </div>
+                {% endif %}
+
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <a href="{% url 'medicine_detail' medicine.id %}" class="btn-secondary" style="flex: 1; text-align: center; padding: 10px;">
+                        <i class="fas fa-eye"></i> View
+                    </a>
+                    {% if user.is_authenticated and user.profile.role == "ngo" %}
+                    <a href="{% url 'request_medicine' medicine.id %}" class="btn-primary" style="flex: 1; text-align: center; padding: 10px;">
+                        <i class="fas fa-hand-paper"></i> Request
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card app-card" style="text-align: center; padding: 60px;">
+            <i class="fas fa-inbox" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+            <h3 style="color: #999;">No medicines found</h3>
+            <p style="color: #999;">Try adjusting your search criteria</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

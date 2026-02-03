@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="420" height="320" viewBox="0 0 420 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad4" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#be185d"/>
+    </linearGradient>
+  </defs>
+  <rect width="420" height="320" fill="url(#grad4)" opacity="0.1"/>
+  
+  <!-- Large heart -->
+  <g transform="translate(100, 60)">
+    <path d="M 50 30 C 50 20 45 10 35 10 C 28 10 22 16 20 24 C 18 16 12 10 5 10 C -5 10 -10 20 -10 30 C -10 45 5 60 20 75 C 35 60 50 45 50 30 Z" fill="#ec4899" opacity="0.8"/>
+  </g>
+
+  <!-- Statistics/Bar chart -->
+  <g transform="translate(240, 100)">
+    <rect x="0" y="40" width="12" height="40" rx="2" fill="#ec4899" opacity="0.6"/>
+    <rect x="18" y="25" width="12" height="55" rx="2" fill="#ec4899" opacity="0.7"/>
+    <rect x="36" y="10" width="12" height="70" rx="2" fill="#ec4899" opacity="0.8"/>
+    <rect x="54" y="30" width="12" height="50" rx="2" fill="#ec4899" opacity="0.65"/>
+    
+    <!-- Baseline -->
+    <line x1="-5" y1="80" x2="75" y2="80" stroke="#ec4899" stroke-width="1.5" opacity="0.3"/>
+  </g>
+
+  <!-- Upward trending arrow -->
+  <g transform="translate(120, 200)">
+    <path d="M 40 40 L 60 20 L 70 30" stroke="#ec4899" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <polygon points="70,30 75,10 60,15" fill="#ec4899" opacity="0.8"/>
+  </g>
+
+  <!-- Checkmarks -->
+  <g transform="translate(280, 200)">
+    <!-- Check 1 -->
+    <path d="M 0 20 L 8 28 L 20 10" stroke="#ec4899" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Check 2 -->
+    <path d="M 0 45 L 8 53 L 20 35" stroke="#ec4899" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+  </g>
+
+  <!-- Globe/World impact -->
+  <g transform="translate(80, 280)">
+    <circle cx="15" cy="15" r="12" stroke="#ec4899" stroke-width="1.5" fill="none" opacity="0.6"/>
+    <path d="M 3 15 Q 15 8 27 15" stroke="#ec4899" stroke-width="1" opacity="0.5"/>
+    <path d="M 3 15 Q 15 22 27 15" stroke="#ec4899" stroke-width="1" opacity="0.5"/>
+  </g>
+
+  <!-- Decorative circles -->
+  <circle cx="340" cy="80" r="9" fill="#ec4899" opacity="0.2"/>
+  <circle cx="50" cy="50" r="7" fill="#be185d" opacity="0.15"/>
+</svg>
