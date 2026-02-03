@@ -330,6 +330,11 @@ This project is for **educational and research purposes**.
 
 **Medshare Team**
 
+Team members
+Adarsh Raj
+Piyush Gupta
+Shilpi Kumari
+Satyam Kr Suman
 ---
 
 ## 📬 Support
